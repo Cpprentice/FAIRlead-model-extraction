@@ -1,0 +1,369 @@
+openapi: 3.0.3
+info:
+  contact:
+    email: philipp.schmurr@kit.edu
+  description: "This is a Schema extraction API based on the OpenAPI 3.0 specification.\
+    \  You can find out more about\nSwagger at [https://swagger.io](https://swagger.io). "
+  license:
+    name: MIT
+  termsOfService: http://swagger.io/terms/
+  title: Schema API - OpenAPI 3.0
+  version: 0.1.0
+externalDocs:
+  description: Find out more about Swagger
+  url: http://swagger.io
+servers:
+- url: http://localhost/api/v0
+tags:
+- description: Everything about your existing data's schema
+  externalDocs:
+    description: Find out more
+    url: http://swagger.io
+  name: schema
+- description: Access to information on the schema of individual entities
+  externalDocs:
+    description: Find out more about our store
+    url: http://swagger.io
+  name: entity
+- description: Operations about keys
+  name: key
+- description: A file format supported by the schema API
+  name: format
+paths:
+  /formats:
+    get:
+      description: desc
+      operationId: getAllFormats
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Format'
+                type: array
+          description: successful operation
+      summary: Get all supported formats of this API
+      tags:
+      - format
+  /schemata:
+    get:
+      description: desc
+      operationId: getAllSchemas
+      parameters:
+      - explode: true
+        in: query
+        name: EntityPrefix
+        required: false
+        schema:
+          default: ""
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Schema'
+                type: array
+            application/xml:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Schema'
+                type: array
+                xml:
+                  name: schemas
+          description: successful operation
+      summary: Get all avialable schemas from this API server
+      tags:
+      - schema
+  /schemata/{schemaId}:
+    get:
+      description: desc
+      operationId: getSchemaByID
+      parameters:
+      - description: ID of schema to return
+        explode: false
+        in: path
+        name: schemaId
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: EntityPrefix
+        required: false
+        schema:
+          default: ""
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Schema'
+          description: successful operation
+        "404":
+          description: not found
+      summary: Get schema by ID
+      tags:
+      - schema
+  /schemata/{schemaId}/diagram:
+    get:
+      description: desc
+      operationId: getSchemaDiagram
+      parameters:
+      - description: ID of schema to return
+        explode: false
+        in: path
+        name: schemaId
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            image/svg+xml:
+              schema:
+                type: string
+            text/plain:
+              schema:
+                type: string
+          description: successful operation
+        "404":
+          description: schema not found
+      summary: Get a diagram for the schema
+      tags:
+      - schema
+  /schemata/{schemaId}/entities:
+    get:
+      description: desc
+      operationId: getEntitiesBySchema
+      parameters:
+      - description: ID of schema to return
+        explode: false
+        in: path
+        name: schemaId
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: EntityPrefix
+        required: false
+        schema:
+          default: ""
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Entity'
+                type: array
+            application/xml:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Entity'
+                type: array
+                xml:
+                  name: entities
+          description: successful operation
+      summary: Get all entities of a schema
+      tags:
+      - entity
+  /schemata/{schemaId}/entities/{entityId}:
+    get:
+      description: desc
+      operationId: getEntityById
+      parameters:
+      - description: ID of schema to return
+        explode: false
+        in: path
+        name: schemaId
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: ID of entity to return
+        explode: false
+        in: path
+        name: entityId
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Entity'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/Entity'
+          description: successful operation
+      summary: Get a specific entity
+      tags:
+      - entity
+components:
+  parameters:
+    EntityPrefix:
+      explode: true
+      in: query
+      name: EntityPrefix
+      required: false
+      schema:
+        default: ""
+        type: string
+      style: form
+  schemas:
+    Attribute:
+      properties:
+        name:
+          example: id
+          title: name
+          type: string
+        type:
+          enum:
+          - bool
+          - float
+          - int
+          - string
+          title: type
+          type: string
+        isCollection:
+          default: false
+          title: isCollection
+          type: boolean
+        isKey:
+          default: false
+          title: isKey
+          type: boolean
+      required:
+      - isCollection
+      - isKey
+      - name
+      - type
+      title: Attribute
+      type: object
+    Entity:
+      properties:
+        url:
+          example: http://localhost/schemata/xy/entities/zy
+          format: url
+          type: string
+        name:
+          example: EntityXY
+          type: string
+        type:
+          enum:
+          - strong
+          - weak
+          type: string
+        attributes:
+          items:
+            $ref: '#/components/schemas/Attribute'
+          type: array
+        key:
+          $ref: '#/components/schemas/Entity_key'
+        relatedEntities:
+          items:
+            $ref: '#/components/schemas/EntityLink'
+          type: array
+      required:
+      - attributes
+      - key
+      - name
+      - relatedEntities
+      - type
+      - url
+      type: object
+      xml:
+        name: entity
+    EntityLink:
+      properties:
+        name:
+          example: EntityXY
+          title: name
+          type: string
+        relationName:
+          example: IsChild
+          title: relationName
+          type: string
+        cardinalities:
+          items:
+            type: string
+          maxItems: 2
+          minItems: 2
+          title: cardinalities
+          type: array
+        link:
+          example: http://localhost/entityXY
+          format: url
+          title: link
+          type: string
+      title: EntityLink
+      type: object
+      xml:
+        name: entity-link
+    Format:
+      properties:
+        name:
+          example: XML
+          type: string
+        inputs:
+          items:
+            type: string
+          type: array
+      type: object
+    Key:
+      properties:
+        selectors:
+          items:
+            type: string
+          title: selectors
+          type: array
+      title: Key
+      type: object
+      xml:
+        name: key
+    Schema:
+      properties:
+        id:
+          example: case300
+          type: string
+        description:
+          example: File based datasource from XY
+          type: string
+        implementation:
+          type: string
+        schemaFile:
+          type: string
+        sourceFile:
+          type: string
+        entities:
+          items:
+            $ref: '#/components/schemas/EntityLink'
+          type: array
+          xml:
+            name: entities
+      type: object
+      xml:
+        name: schema
+    Entity_key:
+      allOf:
+      - $ref: '#/components/schemas/Key'
+      default: null
+      example:
+        selectors:
+        - column
+      nullable: true
+      title: Entity_key

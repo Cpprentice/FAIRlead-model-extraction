@@ -1,0 +1,9 @@
+{{#models}}
+{{#model}}
+from {{packageName}}.models.{{classFilename}} import {{classname}}
+{{/model}}
+{{/models}}
+
+VERSION = '{{appVersion}}'
+
+__all__ = [{{#models}}{{#model}}'{{classname}}'{{^-last}}, {{/-last}}{{/model}}{{/models}}]

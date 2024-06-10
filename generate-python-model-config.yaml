@@ -1,0 +1,41 @@
+templateDir: /local/custom-openapi-template/python-model-only
+# openapiGeneratorIgnoreList: !!set
+#   ? setup.cfg
+#   ? requirements.txt
+#   ? src/simpler_model/main.py
+#   ? src/simpler_model/security_api.py
+#   ? src/simpler_model/impl/*
+#   ? src/simpler_model/apis/*
+#   ? src/simpler_model/models/extra_models.py
+openapiGeneratorIgnoreList:
+  - setup.cfg
+  - requirements.txt
+  - Dockerfile
+  - docker-compose.yaml
+  - src/simpler_model/main.py
+  - src/simpler_model/security_api.py
+  - src/simpler_model/impl/*
+  - src/simpler_model/apis/*
+  - src/simpler_model/models/extra_models.py
+globalProperties:
+  models: ""
+  supportingFiles: ""
+inputSpec: /local/spec/0/openapi.yaml
+additionalProperties:
+  allowUnicodeIdentifiers: false
+  disallowAdditionalPropertiesIfNotPresent: false  # custom
+  ensureUniqueParams: true
+  enumUnknownDefaultCase: false
+  fastapiImplementationPackage: simpler_model.impl  # custom
+  legacyDiscriminatorBehavior: true
+  packageName: simpler_model  # custom
+  packageVersion: 0.1.0  # custom
+  prependFormOrBodyParameters: false
+  serverPort: 7373  # custom
+  sortModelPropertiesByRequiredFlag: true
+  sortParamsByRequiredFlag: true
+  sourceFolder: src
+files:
+  package__init__.mustache:
+    folder: src/simpler_model
+    destinationFilename: __init__.py

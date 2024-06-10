@@ -1,0 +1,9 @@
+version: '3.6'
+services:
+  service:
+    build:
+      context: .
+      target: service
+    ports:
+      - "7373:7373"
+    command: uvicorn simpler_model.main:app --host 0.0.0.0 --port 7373

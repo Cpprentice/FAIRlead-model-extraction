@@ -1,0 +1,10 @@
+# coding: utf-8
+
+{{>partial_header}}
+
+
+{{#models}}
+{{#model}}
+from {{customModelPackage}}.{{classFilename}} import {{classname}}
+{{/model}}
+{{/models}}

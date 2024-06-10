@@ -1,0 +1,2 @@
+spec/*/openapi.yaml text eol=lf
+custom-openapi-template/** text=lf

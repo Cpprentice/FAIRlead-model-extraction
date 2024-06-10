@@ -1,0 +1,15 @@
+.flake8
+.gitignore
+README.md
+openapi.yaml
+pyproject.toml
+src/simpler_model/__init__.py
+src/simpler_model/models/__init__.py
+src/simpler_model/models/attribute.py
+src/simpler_model/models/entity.py
+src/simpler_model/models/entity_key.py
+src/simpler_model/models/entity_link.py
+src/simpler_model/models/format.py
+src/simpler_model/models/key.py
+src/simpler_model/models/model_schema.py
+tests/conftest.py
