@@ -242,7 +242,7 @@ class OwlDataSourcePlugin(DataSourcePlugin):
                     stream.close()
                     ontology = world.get_ontology(stream_path_url).load()
             sync_reasoner_pellet(world)
-            target_namespace = graph.namespace_manager.expand_curie(':')
+            # target_namespace = graph.namespace_manager.expand_curie(':')
 
             classes = sorted(build_iterative_class_list(ontology), key=lambda x: x.name)
             data_properties = sorted(ontology.data_properties(), key=lambda x: x.name)
