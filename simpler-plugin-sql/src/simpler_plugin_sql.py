@@ -310,7 +310,9 @@ class SqlDataSourcePlugin(DataSourcePlugin):
                             relations.append(
                                 EntityLink(
                                     name=fk_short_name,
-                                    link=self.url_factory('get_entity_by_id', schemaId=name, entityId=fk_short_name)
+                                    relation_name=foreign_key.constraint_name,
+                                    link=self.url_factory('get_entity_by_id', schemaId=name, entityId=fk_short_name),
+                                    cardinalities=cardinality_maker(foreign_key)
                                 )
                             )
 
@@ -334,3 +336,9 @@ class SqlDataSourcePlugin(DataSourcePlugin):
             if entity.name == entity_id:
                 return entity
         raise KeyError()
+
+
+def cardinality_maker(foreign_key: ForeignKey) -> List[str]:
+    if foreign_key.nullable:
+        return ['0..1', 'n']
+    return ['1', 'n']

@@ -1,5 +1,6 @@
 import codecs
 import collections
+import io
 import shutil
 from pathlib import Path
 from tempfile import TemporaryFile, NamedTemporaryFile
@@ -9,6 +10,7 @@ from owlready2 import get_ontology, Ontology, ThingClass, World, sync_reasoner_p
 from owlrl import DeductiveClosure, OWLRL_Semantics
 from rdflib import Graph, RDF, OWL, RDFS
 
+from owl2_util import extract_ontology_concepts, make_n_triples_stream
 from simpler_core.plugin import DataSourcePlugin, DataSourceType
 from simpler_model import Entity, EntityLink, Attribute
 
@@ -161,21 +163,6 @@ WHERE {
 }
 """
 
-relevant_restrictions = {
-    EXACTLY, MAX, MIN
-}
-
-
-def build_iterative_class_list(ontology: Ontology) -> List[ThingClass]:
-    class_set = set(ontology.classes())
-    new_classes = {1}
-    while len(new_classes) > 0:
-        next_class_set = {cls for base_cls in class_set for cls in base_cls.subclasses()} | class_set
-        new_classes = next_class_set ^ class_set
-        class_set = next_class_set
-
-    return list(class_set)
-
 
 class SparqlDataSourceType(DataSourceType):
     name = 'SPARQL'
@@ -226,27 +213,12 @@ class OwlDataSourcePlugin(DataSourcePlugin):
 
         # return
 
-        graph = Graph()
-        world = World()
-        # graph2 = Graph()
-        # graph.parse(str(OWL))  # TODO find an offline solution
-
         with self.storage.get_data(name) as stream_lookup:
             if 'ontology' in stream_lookup:
-                graph.parse(stream_lookup['ontology'])
-                # stream_lookup['ontology'].seek(0)
-                # graph2.parse(stream_lookup['ontology'])
-                with NamedTemporaryFile('w', newline='', delete_on_close=False, encoding='utf-8') as stream:
-                    stream_path_url = Path(stream.name).as_uri().replace('///', '//')
-                    stream.write(graph.serialize(format='ntriples'))
-                    stream.close()
-                    ontology = world.get_ontology(stream_path_url).load()
-            sync_reasoner_pellet(world)
-            # target_namespace = graph.namespace_manager.expand_curie(':')
-
-            classes = sorted(build_iterative_class_list(ontology), key=lambda x: x.name)
-            data_properties = sorted(ontology.data_properties(), key=lambda x: x.name)
-            object_properties = sorted(ontology.object_properties(), key=lambda x: x.name)
+                with make_n_triples_stream(stream_lookup['ontology']) as n_triples_stream:
+                    stream_path_url = Path(n_triples_stream.name).as_uri().replace('///', '//')
+                    classes, object_properties, data_properties, property_restrictions, world, ontology = \
+                        extract_ontology_concepts(n_triples_stream, stream_path_url)
 
             object_property_query = object_property_query_template.format(
                 ' '.join(f'<{class_.iri}>' for class_ in classes),
@@ -256,27 +228,6 @@ class OwlDataSourcePlugin(DataSourcePlugin):
             direct_instance_query = direct_instance_query_template.format(
                 ' '.join(f'<{class_.iri}>' for class_ in classes)
             )
-
-            property_restrictions = collections.defaultdict(list)
-            for domain, restriction, prop in world.sparql(property_restrictions_query):
-                if restriction.type in relevant_restrictions:
-                    cardinality = str(restriction.cardinality) if restriction.cardinality is not None else 'n'
-                    if restriction.type == EXACTLY:
-                        property_restrictions[(domain, prop)].append([cardinality, cardinality])
-                    elif restriction.type == MIN:
-                        property_restrictions[(domain, prop)].append([cardinality, 'n'])
-                    elif restriction.type == MAX:
-                        property_restrictions[(domain, prop)].append(['0', cardinality])
-                    else:
-                        raise NotImplementedError('restriction type not supported')
-
-            if any(len(l) != 1 for l in property_restrictions.values()):
-                raise RuntimeError(
-                    'restriction has multiple definitions for cardinality on the same domain / property pair')
-            property_restrictions = {
-                key: l[0]
-                for key, l in property_restrictions.items()
-            }
 
             object_property_query_data = set()
             direct_instance_query_data = set()
@@ -354,9 +305,13 @@ class OwlDataSourcePlugin(DataSourcePlugin):
                             name=target_class.name,
                             relation_name=object_prop.name,
                             cardinalities=
-                            ['0', 'n']
-                            if (class_, object_prop) not in property_restrictions
-                            else property_restrictions[(class_, object_prop)],
+                            (
+                                ['0', 'n']
+                                if (class_, object_prop, None) not in property_restrictions
+                                else property_restrictions[(class_, object_prop, None)]
+                            )
+                            if (class_, object_prop, target_class) not in property_restrictions
+                            else property_restrictions[(class_, object_prop, target_class)],
                             link=f'http://localhost:7373/schemata/mondial-rdf/entities/{target_class.name}',
                         )
                         relations.append(entity_link)
