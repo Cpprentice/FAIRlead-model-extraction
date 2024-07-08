@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from pathlib import Path
 import shutil
-from typing import Dict, IO, List
+from typing import Dict, IO, List, Tuple
 
 
 class DataSourceStorage(ABC):
@@ -26,6 +26,32 @@ class DataSourceStorage(ABC):
     @abstractmethod
     def list_available_data(self) -> List[str]:
         ...
+
+
+class ManualFilesystemDataSourceStorage(DataSourceStorage):
+
+    def __init__(self, files: Dict[str, Tuple[str, Dict[str, Path]]]):
+        self.files = files
+
+    @contextmanager
+    def get_data(self, name: str) -> Dict[str, IO]:
+        data = {}
+        try:
+            for input_name, file_path in self.files[name][1].items():
+                data[input_name] = file_path.open('rb')
+            yield data
+        finally:
+            for stream in data.values():
+                stream.close()
+
+    def insert_data(self, name: str, plugin_name: str, parts: Dict[str, IO]):
+        raise NotImplementedError()
+
+    def get_plugin_name(self, data_source_name: str) -> str:
+        return self.files[data_source_name][0]
+
+    def list_available_data(self) -> List[str]:
+        return list(self.files.keys())
 
 
 class FilesystemDataSourceStorage(DataSourceStorage):
