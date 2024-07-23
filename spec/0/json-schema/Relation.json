@@ -1,0 +1,50 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "Relation",
+    "title": "Relation",
+    "type": "object",
+    "properties": {
+        "hasAttribute": {
+            "type": "array",
+            "items": {
+                "$ref": "Attribute.json"
+            },
+            "default": []
+        },
+        "hasObjectEntity": {
+            "format": "url",
+            "pattern": "http://localhost:7373/schemata/[^/]+/entities/[^/]+"
+        },
+        "hasRelationModifier": {
+            "type": "array",
+            "items": {
+                "$ref": "RelationModifier.json"
+            },
+            "default": []
+        },
+        "hasSubjectEntity": {
+            "format": "url",
+            "pattern": "http://localhost:7373/schemata/[^/]+/entities/[^/]+"
+        },
+        "objectCardinality": {
+            "$ref": "Cardinality.json"
+        },
+        "subjectCardinality": {
+            "$ref": "Cardinality.json"
+        },
+        "relationName": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "minItems": 1
+        }
+    },
+    "required": [
+        "hasObjectEntity",
+        "hasSubjectEntity",
+        "objectCardinality",
+        "subjectCardinality",
+        "relationName"
+    ]
+}

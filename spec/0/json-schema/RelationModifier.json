@@ -1,0 +1,19 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "RelationModifier",
+    "title": "RelationModifier",
+    "type": "object",
+    "properties": {
+        "relationModifier": {
+            "type": "string"
+        }
+    },
+    "required": [
+        "relationModifier"
+    ],
+    "enum": [
+        {
+            "RelationModifier": "identifying"
+        }
+    ]
+}

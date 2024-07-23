@@ -1,0 +1,28 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "Cardinality",
+    "title": "Cardinality",
+    "type": "object",
+    "properties": {
+        "cardinality": {
+            "type": "string"
+        }
+    },
+    "required": [
+        "cardinality"
+    ],
+    "enum": [
+        {
+            "Cardinality": "exactlyOne"
+        },
+        {
+            "Cardinality": "oneOrNone"
+        },
+        {
+            "Cardinality": "any"
+        },
+        {
+            "Cardinality": "oneOrMore"
+        }
+    ]
+}

@@ -1,0 +1,25 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "Modifier",
+    "title": "Modifier",
+    "type": "object",
+    "properties": {
+        "modifier": {
+            "type": "string"
+        }
+    },
+    "required": [
+        "modifier"
+    ],
+    "enum": [
+        {
+            "Modifier": "key"
+        },
+        {
+            "Modifier": "weak"
+        },
+        {
+            "Modifier": "identifying"
+        }
+    ]
+}

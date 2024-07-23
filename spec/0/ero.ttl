@@ -1,0 +1,253 @@
+@prefix : <http://iai.kit.edu/vocabularies/entity-relationship-ontology/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xml: <http://www.w3.org/XML/1998/namespace> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@base <http://iai.kit.edu/vocabularies/entity-relationship-ontology/> .
+
+<http://iai.kit.edu/vocabularies/entity-relationship-ontology/> rdf:type owl:Ontology ;
+                                                                 rdfs:label "Entity Relationship Ontology (ERO)" ;
+                                                                 owl:versionInfo "1.0.0" .
+
+#################################################################
+#    Object Properties
+#################################################################
+
+###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/hasAttribute
+:hasAttribute rdf:type owl:ObjectProperty ;
+              owl:inverseOf :isAttributeOf ;
+              rdfs:domain :Entity ,
+                          :Relation ;
+              rdfs:range :Attribute .
+
+
+###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/hasAttributeModifier
+:hasAttributeModifier rdf:type owl:ObjectProperty ;
+                      rdfs:subPropertyOf :hasModifier ;
+                      rdfs:domain :Attribute ;
+                      rdfs:range :AttributeModifier .
+
+
+###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/hasEntityModifier
+:hasEntityModifier rdf:type owl:ObjectProperty ;
+                   rdfs:subPropertyOf :hasModifier ;
+                   rdfs:domain :Entity ;
+                   rdfs:range :EntityModifier .
+
+
+###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/hasModifier
+:hasModifier rdf:type owl:ObjectProperty ;
+             rdfs:domain [ rdf:type owl:Class ;
+                           owl:complementOf owl:Thing
+                         ] .
+
+
+###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/hasObjectEntity
+:hasObjectEntity rdf:type owl:ObjectProperty ;
+                 owl:inverseOf :isObjectInRelation ;
+                 rdfs:domain :Relation ;
+                 rdfs:range :Entity .
+
+
+###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/hasRelationModifier
+:hasRelationModifier rdf:type owl:ObjectProperty ;
+                     rdfs:subPropertyOf :hasModifier ;
+                     rdfs:domain :Relation ;
+                     rdfs:range :RelationModifier .
+
+
+###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/hasSubjectEntity
+:hasSubjectEntity rdf:type owl:ObjectProperty ;
+                  owl:inverseOf :isSubjectInRelation ;
+                  rdfs:domain :Relation ;
+                  rdfs:range :Entity .
+
+
+###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/isAttributeOf
+:isAttributeOf rdf:type owl:ObjectProperty ;
+               rdfs:domain :Attribute ;
+               rdfs:range :Entity ,
+                          :Relation .
+
+
+###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/isObjectInRelation
+:isObjectInRelation rdf:type owl:ObjectProperty ;
+                    rdfs:domain :Entity ;
+                    rdfs:range :Relation .
+
+
+###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/isSubjectInRelation
+:isSubjectInRelation rdf:type owl:ObjectProperty ;
+                     rdfs:domain :Entity ;
+                     rdfs:range :Relation .
+
+
+###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/objectCardinality
+:objectCardinality rdf:type owl:ObjectProperty ;
+                   rdfs:domain :Relation ;
+                   rdfs:range :Cardinality .
+
+
+###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/subjectCardinality
+:subjectCardinality rdf:type owl:ObjectProperty ;
+                    rdfs:domain :Relation ;
+                    rdfs:range :Cardinality .
+
+
+#################################################################
+#    Data properties
+#################################################################
+
+###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/attributeName
+:attributeName rdf:type owl:DatatypeProperty ;
+               rdfs:domain :Attribute ;
+               rdfs:range xsd:string .
+
+
+###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/entityName
+:entityName rdf:type owl:DatatypeProperty ;
+            rdfs:domain :Entity ;
+            rdfs:range xsd:string .
+
+
+###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/relationName
+:relationName rdf:type owl:DatatypeProperty ;
+              rdfs:domain :Relation ;
+              rdfs:range xsd:string .
+
+
+#################################################################
+#    Classes
+#################################################################
+
+###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/Attribute
+:Attribute rdf:type owl:Class ;
+           rdfs:subClassOf [ rdf:type owl:Restriction ;
+                             owl:onProperty :isAttributeOf ;
+                             owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+                             owl:onClass :Entity
+                           ] ,
+                           [ rdf:type owl:Restriction ;
+                             owl:onProperty :isAttributeOf ;
+                             owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+                             owl:onClass :Relation
+                           ] ,
+                           [ rdf:type owl:Restriction ;
+                             owl:onProperty :attributeName ;
+                             owl:minQualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+                             owl:onDataRange xsd:string
+                           ] .
+
+
+###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/AttributeModifier
+:AttributeModifier rdf:type owl:Class ;
+                   rdfs:subClassOf :Modifier .
+
+
+###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/Cardinality
+:Cardinality rdf:type owl:Class .
+
+
+###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/Entity
+:Entity rdf:type owl:Class ;
+        owl:equivalentClass <http://purl.org/nemo/gufo#ConcreteIndividualType> ;
+        rdfs:subClassOf [ rdf:type owl:Restriction ;
+                          owl:onProperty :entityName ;
+                          owl:minQualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+                          owl:onDataRange xsd:string
+                        ] .
+
+
+###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/EntityModifier
+:EntityModifier rdf:type owl:Class ;
+                rdfs:subClassOf :Modifier .
+
+
+###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/Modifier
+:Modifier rdf:type owl:Class .
+
+
+###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/Relation
+:Relation rdf:type owl:Class ;
+          owl:equivalentClass <http://purl.org/nemo/gufo#RelationshipType> ;
+          rdfs:subClassOf [ rdf:type owl:Restriction ;
+                            owl:onProperty :hasObjectEntity ;
+                            owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+                            owl:onClass :Entity
+                          ] ,
+                          [ rdf:type owl:Restriction ;
+                            owl:onProperty :hasSubjectEntity ;
+                            owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+                            owl:onClass :Entity
+                          ] ,
+                          [ rdf:type owl:Restriction ;
+                            owl:onProperty :objectCardinality ;
+                            owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+                            owl:onClass :Cardinality
+                          ] ,
+                          [ rdf:type owl:Restriction ;
+                            owl:onProperty :subjectCardinality ;
+                            owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+                            owl:onClass :Cardinality
+                          ] ,
+                          [ rdf:type owl:Restriction ;
+                            owl:onProperty :relationName ;
+                            owl:minQualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+                            owl:onDataRange xsd:string
+                          ] .
+
+
+###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/RelationModifier
+:RelationModifier rdf:type owl:Class ;
+                  rdfs:subClassOf :Modifier .
+
+
+###  http://purl.org/nemo/gufo#ConcreteIndividualType
+<http://purl.org/nemo/gufo#ConcreteIndividualType> rdf:type owl:Class .
+
+
+###  http://purl.org/nemo/gufo#RelationshipType
+<http://purl.org/nemo/gufo#RelationshipType> rdf:type owl:Class .
+
+
+#################################################################
+#    Individuals
+#################################################################
+
+###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/any
+:any rdf:type owl:NamedIndividual ,
+              :Cardinality .
+
+
+###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/exactlyOne
+:exactlyOne rdf:type owl:NamedIndividual ,
+                     :Cardinality .
+
+
+###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/identifying
+:identifying rdf:type owl:NamedIndividual ,
+                      :RelationModifier .
+
+
+###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/key
+:key rdf:type owl:NamedIndividual ,
+              :AttributeModifier .
+
+
+###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/oneOrMore
+:oneOrMore rdf:type owl:NamedIndividual ,
+                    :Cardinality .
+
+
+###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/oneOrNone
+:oneOrNone rdf:type owl:NamedIndividual ,
+                    :Cardinality .
+
+
+###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/weak
+:weak rdf:type owl:NamedIndividual ,
+               :EntityModifier .
+
+
+###  Generated by the OWL API (version 4.5.26.2023-07-17T20:34:13Z) https://github.com/owlcs/owlapi

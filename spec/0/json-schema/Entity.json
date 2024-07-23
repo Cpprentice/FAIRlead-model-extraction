@@ -1,0 +1,46 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "Entity",
+    "title": "Entity",
+    "type": "object",
+    "properties": {
+        "hasAttribute": {
+            "type": "array",
+            "items": {
+                "$ref": "Attribute.json"
+            },
+            "default": []
+        },
+        "hasEntityModifier": {
+            "type": "array",
+            "items": {
+                "$ref": "EntityModifier.json"
+            },
+            "default": []
+        },
+        "isObjectInRelation": {
+            "type": "array",
+            "items": {
+                "$ref": "Relation.json"
+            },
+            "default": []
+        },
+        "isSubjectInRelation": {
+            "type": "array",
+            "items": {
+                "$ref": "Relation.json"
+            },
+            "default": []
+        },
+        "entityName": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "minItems": 1
+        }
+    },
+    "required": [
+        "entityName"
+    ]
+}

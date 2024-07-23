@@ -1,0 +1,19 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "EntityModifier",
+    "title": "EntityModifier",
+    "type": "object",
+    "properties": {
+        "entityModifier": {
+            "type": "string"
+        }
+    },
+    "required": [
+        "entityModifier"
+    ],
+    "enum": [
+        {
+            "EntityModifier": "weak"
+        }
+    ]
+}
