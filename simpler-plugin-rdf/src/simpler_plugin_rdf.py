@@ -1,17 +1,17 @@
 import codecs
 import collections
+import functools
 import io
 import shutil
 from pathlib import Path
 from tempfile import TemporaryFile, NamedTemporaryFile
 from typing import List, Dict
 
-from owlready2 import get_ontology, Ontology, ThingClass, World, sync_reasoner_pellet, EXACTLY, MAX, MIN
-from owlrl import DeductiveClosure, OWLRL_Semantics
 from rdflib import Graph, RDF, OWL, RDFS
 
-from owl2_util import extract_ontology_concepts, make_n_triples_stream
 from simpler_core.plugin import DataSourcePlugin, DataSourceType
+from simpler_core.rdf import (extract_ontology_concepts, make_n_triples_stream, get_cardinality_restrictions,
+                              build_cardinality, merge_cardinalities, stringify_cardinality)
 
 try:
     from simpler_model import Entity, Relation, Attribute
@@ -295,28 +295,40 @@ class OwlDataSourcePlugin(DataSourcePlugin):
 
             relations = []
             for object_prop in object_properties:
+                general_restrictions = get_cardinality_restrictions(class_, object_prop, None)
+                general_cardinality = build_cardinality(general_restrictions)
+                # all_cardinalities = [general_cardinality]
+
+                # TODO reconsider any instead of all here - i think there was a reason for it
                 if all(clause._satisfied_by(class_) for clause in object_prop.domain):
                     for target_class in [
                         target_class
                         for target_class in classes
-                        if all(clause._satisfied_by(target_class) for clause in object_prop.range)
+                        if any(clause._satisfied_by(target_class) for clause in object_prop.range)
                     ]:
                         if only_include_if_data_exists:
                             if (class_, object_prop, target_class) not in object_property_query_data:
                                 continue
                             x = 42
 
+                        restrictions = get_cardinality_restrictions(class_, object_prop, target_class)
+                        specific_cardinality = build_cardinality(restrictions)
+                        all_cardinalities = [general_cardinality, specific_cardinality]
+
+                        combined_cardinality = functools.reduce(merge_cardinalities, all_cardinalities,
+                                                                all_cardinalities[0])
+
+                        if object_prop.inverse_property is not None:
+                            inverse_restrictions = get_cardinality_restrictions(
+                                target_class, object_prop.inverse_property, class_)
+                            inverse_cardinality = build_cardinality(inverse_restrictions)
+                        else:
+                            inverse_cardinality = build_cardinality([])
+
                         entity_link = EntityLink(
                             name=target_class.name,
                             relation_name=object_prop.name,
-                            cardinalities=
-                            (
-                                ['0', 'n']
-                                if (class_, object_prop, None) not in property_restrictions
-                                else property_restrictions[(class_, object_prop, None)]
-                            )
-                            if (class_, object_prop, target_class) not in property_restrictions
-                            else property_restrictions[(class_, object_prop, target_class)],
+                            cardinalities=stringify_cardinality(combined_cardinality, inverse_cardinality),
                             link=f'http://localhost:7373/schemata/mondial-rdf/entities/{target_class.name}',
                         )
                         relations.append(entity_link)
