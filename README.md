@@ -15,6 +15,23 @@ With this extraction of the basic entities and relations future data integration
 
 ## Repository
 
-This repository shall contain the service that is used to extract a conceptual model and provide it via a REST API.
+This repository shall contain the service that is used to extract a conceptual model and provide it via a REST API or a CLI.
 Moreover, a visualization via the [Graphviz software](https://graphviz.org/) shall be available.
+
+
+It contains many subfolders for different Python modules.
+
+- simpler-api
+- simpler-cli
+- simpler-core
+- simpler-model
+- simpler-model-3_1
+- simpler-plugin-rdf
+- simpler-plugin-sql
+- simpler-plugin-tabular
+- simpler-plugin-xml
+
+### Simpler API
+The API folder includes the Python code to provide the functionality as a REST service.
+
 

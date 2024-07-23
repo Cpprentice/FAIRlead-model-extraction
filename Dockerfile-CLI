@@ -1,0 +1,29 @@
+FROM python:3.12 as dev
+
+WORKDIR /app
+
+COPY simpler-core/ /app/simpler_core
+COPY simpler-cli /app/simpler_cli
+COPY simpler-model-3_1 /app/simpler_model
+COPY simpler-plugin-tabular /app/simpler_plugin_tabular
+
+RUN pip wheel --no-deps -w /app/wheels /app/simpler_model
+RUN pip wheel --no-deps -w /app/wheels /app/simpler_core
+RUN pip wheel --no-deps -w /app/wheels /app/simpler_cli
+
+RUN pip wheel --no-deps -w /app/wheels /app/simpler_plugin_tabular
+
+FROM python:3.12
+
+WORKDIR /app
+
+COPY --from=dev /app/wheels /app/wheels
+
+# This should find the necessary other modules from the wheel dir
+RUN pip install --find-links /app/wheels simpler_cli
+
+RUN pip install --find-links /app/wheels simpler_plugin_tabular
+RUN apt-get update
+RUN apt-get install -y graphviz
+
+ENTRYPOINT ["python", "-m", "simpler_cli"]

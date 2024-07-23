@@ -47,7 +47,9 @@ dependencies = [
   "typing-extensions~=4.8.0",
   "pydantic~=2.6.4",
   "fastapi[all]",
-  "pydot"
+  "pydot",
+  "uvicorn",
+  "simpler_core==0.1.0"
 ]
 
 [tool.setuptools.dynamic]

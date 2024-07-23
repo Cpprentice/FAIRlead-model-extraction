@@ -1,4 +1,5 @@
 from abc import abstractmethod, ABC, ABCMeta
+import re
 from typing import ClassVar, List, Tuple, Type, Dict, Callable
 
 from simpler_core.storage import DataSourceStorage
@@ -7,6 +8,7 @@ try:
     EntityLink = Relation
 except ImportError:
     from simpler_model import Entity, EntityLink
+
 
 class DataSourceTypeMeta(type):
     def __new__(cls, name, bases, attrs):
@@ -20,6 +22,13 @@ class DataSourceTypeMeta(type):
 class DataSourceType(metaclass=DataSourceTypeMeta):
     name: str = None
     inputs: List[str] = []
+    input_validation_statement: str = None
+
+    def validate_inputs(self, input_names: List[str]) -> bool:
+        if self.input_validation_statement is None:
+            return True
+        input_name_string = ','.join(sorted(input_names))
+        return re.match(f'^{self.input_validation_statement}$', input_name_string) is not None
 
 
 del DataSourceType.name

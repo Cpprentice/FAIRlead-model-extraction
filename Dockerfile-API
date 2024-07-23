@@ -1,0 +1,40 @@
+FROM python:3.12 as dev
+
+WORKDIR /app
+
+COPY simpler-core/ /app/simpler_core
+COPY simpler-api /app/simpler_api
+COPY simpler-model /app/simpler_model
+# COPY simpler-plugin-tabular /app/simpler_plugin_tabular
+COPY simpler-plugin-rdf /app/simpler_plugin_rdf
+COPY simpler-plugin-sql /app/simpler_plugin_sql
+COPY simpler-plugin-xml /app/simpler_plugin_xml
+
+RUN pip wheel --no-deps -w /app/wheels /app/simpler_model
+RUN pip wheel --no-deps -w /app/wheels /app/simpler_core
+RUN pip wheel --no-deps -w /app/wheels /app/simpler_api
+
+# RUN pip wheel --no-deps -w /app/wheels /app/simpler_plugin_tabular
+RUN pip wheel --no-deps -w /app/wheels /app/simpler_plugin_rdf
+RUN pip wheel --no-deps -w /app/wheels /app/simpler_plugin_sql
+RUN pip wheel --no-deps -w /app/wheels /app/simpler_plugin_xml
+
+FROM python:3.12
+
+WORKDIR /app
+
+COPY --from=dev /app/wheels /app/wheels
+
+# This should find the necessary other modules from the wheel dir
+RUN pip install --find-links /app/wheels simpler_api
+
+# RUN pip install --find-links /app/wheels simpler_plugin_tabular
+RUN pip install --find-links /app/wheels simpler_plugin_rdf
+RUN pip install --find-links /app/wheels simpler_plugin_sql
+RUN pip install --find-links /app/wheels simpler_plugin_xml
+
+RUN pip install uvicorn
+RUN apt-get update
+RUN apt-get install -y graphviz
+
+ENTRYPOINT ["uvicorn", "simpler_api.main:app", "--host", "0.0.0.0", "--port", "7373"]

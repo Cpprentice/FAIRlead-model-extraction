@@ -115,6 +115,10 @@ classifiers = [
 # For an analysis of this field vs pip's requirements files see:
 # https://packaging.python.org/discussions/install-requires-vs-requirements/
 dependencies = [
+  "pydot",
+  "simpler_model",
+  "PyYAML~=6.0.1",
+  "owlready2~=0.46"
 ]
 
 # List additional groups of dependencies here (e.g. development
