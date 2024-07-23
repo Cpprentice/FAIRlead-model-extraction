@@ -39,20 +39,25 @@ class SchemaApi(BaseSchemaApi):
         show_attributes: bool,
     ) -> str:
         graph = pydot.Dot(f'{schemaId}_graph', graph_type='graph')
+        graph.set_fontname("Helvetica,Arial,sans-serif")
+        graph.add_node(pydot.Node('node', fontname='Helvetica,Arial,sans-serif'))
+        graph.add_node(pydot.Node('edge', fontname='Helvetica,Arial,sans-serif'))
 
         cursor = get_cursor(request, schemaId)
         entities = cursor.get_all_entities()
         border_count = {'weak': 2, 'strong': 1}
+        relation_border_count = {True: 2, False: 1}
 
         for entity in entities:
             graph.add_node(pydot.Node(entity.name, shape='box', peripheries=border_count[entity.type]))
             for related_entity in entity.related_entities:
                 sorted_relative_names = sorted([entity.name, related_entity.name])
                 relation_name = f'#{related_entity.relation_name}#'.join(sorted_relative_names)
-                graph.add_node(pydot.Node(relation_name, label=related_entity.relation_name, shape='diamond'))
-                graph.add_edge(pydot.Edge(entity.name, relation_name, headlabel=related_entity.cardinalities[1]))
-                graph.add_edge(pydot.Edge(related_entity.name, relation_name, headlabel=related_entity.cardinalities[0]))
-                # graph.add_edge(pydot.Edge(entity.name, related_entity.name))
+                graph.add_node(pydot.Node(relation_name, label=related_entity.relation_name, shape='diamond',
+                                          style='filled', fillcollor='lightgrey',
+                                          peripheries=relation_border_count[related_entity.is_identifying]))
+                graph.add_edge(pydot.Edge(entity.name, relation_name, label=related_entity.cardinalities[1]))
+                graph.add_edge(pydot.Edge(related_entity.name, relation_name, label=related_entity.cardinalities[0]))
             if show_attributes:
                 for attribute in entity.attributes:
                     attribute_id = f'{entity.name}#{attribute.name}'
