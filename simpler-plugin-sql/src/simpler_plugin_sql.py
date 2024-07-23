@@ -9,8 +9,11 @@ from typing import List, Dict, Set
 from sqlalchemy import create_engine, Connection, text
 
 from simpler_core.plugin import DataSourcePlugin, DataSourceType
-from simpler_model import Attribute, EntityLink, Entity
-
+try:
+    from simpler_model import Attribute, Relation, Entity
+    EntityLink = Relation
+except ImportError:
+    from simpler_model import Attribute, Entity, EntityLink
 
 # the following should work not just for postgres
 table_name_query = text("""

@@ -2,8 +2,11 @@ from abc import abstractmethod, ABC, ABCMeta
 from typing import ClassVar, List, Tuple, Type, Dict, Callable
 
 from simpler_core.storage import DataSourceStorage
-from simpler_model import Entity, EntityLink
-
+try:
+    from simpler_model import Entity, Relation
+    EntityLink = Relation
+except ImportError:
+    from simpler_model import Entity, EntityLink
 
 class DataSourceTypeMeta(type):
     def __new__(cls, name, bases, attrs):

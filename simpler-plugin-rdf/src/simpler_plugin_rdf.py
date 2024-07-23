@@ -12,7 +12,12 @@ from rdflib import Graph, RDF, OWL, RDFS
 
 from owl2_util import extract_ontology_concepts, make_n_triples_stream
 from simpler_core.plugin import DataSourcePlugin, DataSourceType
-from simpler_model import Entity, EntityLink, Attribute
+
+try:
+    from simpler_model import Entity, Relation, Attribute
+    EntityLink = Relation
+except ImportError:
+    from simpler_model import Entity, EntityLink, Attribute
 
 entity_query_template = """
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>

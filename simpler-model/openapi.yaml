@@ -124,6 +124,15 @@ paths:
         schema:
           type: string
         style: simple
+      - description: Toggle the rendering state of attributes
+        explode: true
+        in: query
+        name: showAttributes
+        required: false
+        schema:
+          default: true
+          type: boolean
+        style: form
       responses:
         "200":
           content:
@@ -310,6 +319,10 @@ components:
           format: url
           title: link
           type: string
+        isIdentifying:
+          default: false
+          title: isIdentifying
+          type: boolean
       title: EntityLink
       type: object
       xml:

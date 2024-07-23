@@ -290,6 +290,9 @@ components:
           type: string
           format: url
           example: http://localhost/entityXY
+        isIdentifying:
+          type: boolean
+          default: false
       xml:
         name: entity-link
     Format:

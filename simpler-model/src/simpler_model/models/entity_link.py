@@ -21,7 +21,7 @@ import json
 
 
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
 try:
@@ -37,8 +37,9 @@ class EntityLink(BaseModel):
     relation_name: Optional[StrictStr] = Field(default=None, alias="relationName")
     cardinalities: Optional[Annotated[List[StrictStr], Field(min_length=2, max_length=2)]] = None
     link: Optional[StrictStr] = None
+    is_identifying: Optional[StrictBool] = Field(default=False, alias="isIdentifying")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["name", "relationName", "cardinalities", "link"]
+    __properties: ClassVar[List[str]] = ["name", "relationName", "cardinalities", "link", "isIdentifying"]
 
     model_config = {
         "populate_by_name": True,
@@ -99,7 +100,8 @@ class EntityLink(BaseModel):
             "name": obj.get("name"),
             "relationName": obj.get("relationName"),
             "cardinalities": obj.get("cardinalities"),
-            "link": obj.get("link")
+            "link": obj.get("link"),
+            "isIdentifying": obj.get("isIdentifying") if obj.get("isIdentifying") is not None else False
         })
         # store additional fields in additional_properties
         for _key in obj.keys():

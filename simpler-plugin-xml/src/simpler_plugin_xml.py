@@ -13,8 +13,11 @@ from xmlschema.validators import (XsdComplexType, XsdUnique, XsdKey, XsdKeyref, 
                                   XsdAtomicRestriction, XsdAtomicBuiltin)
 
 from simpler_core.plugin import DataSourcePlugin, DataSourceType, InputDataError
-from simpler_model import EntityLink, Entity, Attribute
-
+try:
+    from simpler_model import Relation, Entity, Attribute
+    EntityLink = Relation
+except ImportError:
+    from simpler_model import Entity, Attribute, EntityLink
 
 # TODO there are several types of "standard" XML description languages that we should all support:
 #  DTD, XSD, RelaxNG and Schematron
@@ -202,6 +205,7 @@ def build_attributes_and_related_entities_enhanced(
                     '1'
                 ],
                 link=f'http://localhost:7373/schemata/iec61850/entities/{quoted_child_path}',
+                is_identifying=True
             ))
 
     for reference in sorted(element.selected_by, key=lambda x: 0 if isinstance(x, XsdKey) else 1):
@@ -428,7 +432,8 @@ class XmlDataSourcePlugin(DataSourcePlugin):
                         name=new_entity.name,
                         relation_name='IsChild',
                         cardinalities=['1', 'n'],
-                        link=new_entity.url
+                        link=new_entity.url,
+                        is_identifying=True
                     ))
                 elif isinstance(existing_spec, Entity):
                     # at the moment the only thing that can differ is the attributes - so let's check them
@@ -457,7 +462,8 @@ class XmlDataSourcePlugin(DataSourcePlugin):
                             name=new_entity.name,
                             relation_name='IsChild',
                             cardinalities=['1', 'n'],
-                            link=new_entity.url
+                            link=new_entity.url,
+                            is_identifying=True
                         ))
                     else:
                         # this seems to be the root
