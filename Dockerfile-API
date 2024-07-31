@@ -28,6 +28,9 @@ COPY --from=dev /app/wheels /app/wheels
 # This should find the necessary other modules from the wheel dir
 RUN pip install --find-links /app/wheels simpler_api
 
+# We need to perform a hotfix for owlready2 here
+RUN sed -i.bak -E "s/(else: +name = )storid/\1str\(storid\)/g" /usr/local/lib/python3.12/site-packages/owlready2/namespace.py
+
 # RUN pip install --find-links /app/wheels simpler_plugin_tabular
 RUN pip install --find-links /app/wheels simpler_plugin_rdf
 RUN pip install --find-links /app/wheels simpler_plugin_sql
