@@ -1,3 +1,4 @@
+from collections.abc import Iterator
 import sys
 import uuid
 from contextlib import contextmanager
@@ -57,7 +58,7 @@ def extract_ontology_concepts(n_triples_stream: IO, ontology_base_url: str) -> T
 
 
 @contextmanager
-def make_n_triples_stream(rdf_like_stream: TextIO) -> IO:
+def make_n_triples_stream(rdf_like_stream: TextIO) -> Iterator[IO]:
     graph = Graph()
     graph.parse(rdf_like_stream)
     with NamedTemporaryFile('w', newline='', delete_on_close=False, encoding='utf-8') as stream:

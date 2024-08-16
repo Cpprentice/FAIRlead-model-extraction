@@ -9,7 +9,7 @@
 # https://packaging.python.org/en/latest/tutorials/packaging-projects/#choosing-a-build-backend
 [build-system]
 # A list of packages that are needed to build your package:
-requires = ["setuptools"]  # REQUIRED if [build-system] table is used
+requires = ["setuptools>=64", "setuptools_scm>=8"]  # REQUIRED if [build-system] table is used
 # The name of the Python object that frontends will use to perform the build:
 build-backend = "setuptools.build_meta"  # If not defined, then legacy behavior can happen.
 
@@ -33,7 +33,8 @@ name = "simpler-core"  # REQUIRED, is the only field that cannot be marked as dy
 #
 # For a discussion on single-sourcing the version, see
 # https://packaging.python.org/guides/single-sourcing-package-version/
-version = "0.1.0"  # REQUIRED, although can be dynamic
+# version = "0.1.0"  # REQUIRED, although can be dynamic
+dynamic = ["version"]
 
 # This is a one-line description or tagline of what your project does. This
 # corresponds to the "Summary" metadata field:
@@ -56,31 +57,26 @@ readme = "README.md"
 # https://packaging.python.org/guides/distributing-packages-using-setuptools/#python-requires
 requires-python = ">=3.12"
 
-# This is either text indicating the license for the distribution, or a file
-# that contains the license.
-# https://packaging.python.org/en/latest/specifications/core-metadata/#license
-license = {file = "LICENSE.txt"}
-
 # This field adds keywords for your project which will appear on the
 # project page. What does your project relate to?
 #
 # Note that this is a list of additional keywords, separated
 # by commas, to be used to assist searching for the distribution in a
 # larger catalog.
-keywords = ["sample", "setuptools", "development"]
+keywords = ["entity-relationship-model", "extraction", "model", "api"]
 
 # This should be your name or the name of the organization who originally
 # authored the project, and a valid email address corresponding to the name
 # listed.
 authors = [
-  {name = "A. Random Developer", email = "author@example.com" }
+  {name = "Philipp Schmurr", email = "philipp.schmurr@kit.edu" }
 ]
 
 # This should be your name or the names of the organization who currently
 # maintains the project, and a valid email address corresponding to the name
 # listed.
 maintainers = [
-  {name = "A. Great Maintainer", email = "maintainer@example.com" }
+  {name = "Philipp Schmurr", email = "philipp.schmurr@kit.edu" }
 ]
 
 # Classifiers help users find your project by categorizing it.
@@ -100,20 +96,11 @@ classifiers = [
   # Pick your license as you wish
   "License :: OSI Approved :: MIT License",
 
-  # Specify the Python versions you support here. In particular, ensure
-  # that you indicate you support Python 3. These classifiers are *not*
-  # checked by "pip install". See instead "requires-python" key in this file.
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3 :: Only",
 ]
 
-# This field lists other packages that your project depends on to run.
-# Any package you put here will be installed by pip when your project is
-# installed, so they must be valid existing projects.
-#
-# For an analysis of this field vs pip's requirements files see:
-# https://packaging.python.org/discussions/install-requires-vs-requirements/
 dependencies = [
   "pydot",
   "simpler_model",
@@ -121,45 +108,14 @@ dependencies = [
   "owlready2~=0.46"
 ]
 
-# List additional groups of dependencies here (e.g. development
-# dependencies). Users will be able to install these using the "extras"
-# syntax, for example:
-#
-#   $ pip install sampleproject[dev]
-#
-# Optional dependencies the project provides. These are commonly
-# referred to as "extras". For a more extensive definition see:
-# https://packaging.python.org/en/latest/specifications/dependency-specifiers/#extras
 [project.optional-dependencies]
-dev = ["check-manifest"]
 test = ["pytest", "pytest-mock", "coverage"]
 
-# List URLs that are relevant to your project
-#
-# This field corresponds to the "Project-URL" and "Home-Page" metadata fields:
-# https://packaging.python.org/specifications/core-metadata/#project-url-multiple-use
-# https://packaging.python.org/specifications/core-metadata/#home-page-optional
-#
-# Examples listed include a pattern for specifying where the package tracks
-# issues, where the source is hosted, where to say thanks to the package
-# maintainers, and where to support the project financially. The key is
-# what's used to render the link text on PyPI.
 [project.urls]
-"Homepage" = "https://github.com/pypa/sampleproject"
-"Bug Reports" = "https://github.com/pypa/sampleproject/issues"
-"Funding" = "https://donate.pypi.org"
-"Say Thanks!" = "http://saythanks.io/to/example"
-"Source" = "https://github.com/pypa/sampleproject/"
+"Homepage" = "https://github.com/Cpprentice/FAIRlead-model-extraction"
+"Bug Reports" = "https://github.com/Cpprentice/FAIRlead-model-extraction/issues"
+"Source" = "https://github.com/Cpprentice/FAIRlead-model-extraction"
 
-# The following would provide a command line executable called `sample`
-# which executes the function `main` from this package when invoked.
-[project.scripts]
-sample = "sample:main"
-
-
-# This is configuration specific to the `setuptools` build backend.
-# If you are using a different build backend, you will need to change this.
-[tool.setuptools]
-# If there are data files included in your packages that need to be
-# installed, specify them here.
-package-data = {"sample" = ["*.dat"]}
+[tool.setuptools_scm]
+tag_regex = "^core-(?P<version>\\d+(?:\\.\\d+){0,2}[^\\+]*)(?:\\+.*)?$"
+root = ".."
