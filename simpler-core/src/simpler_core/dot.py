@@ -50,6 +50,18 @@ def create_graph(entities: List[Entity], show_attributes=False) -> Dot:
     def cardinality_converter(cardinality: Cardinality) -> str:
         return cardinality_translation[cardinality.cardinality]
 
+    entity_name_translation = {
+        name: entity.entity_name[0]
+        for entity in entities
+        # if len(entity.entity_name) > 1
+        for name in entity.entity_name[1:]
+    }
+
+    def translate_name(name: str) -> str:
+        if name in entity_name_translation:
+            return entity_name_translation[name]
+        return name
+
     for entity in entities:
         entity_name = entity.entity_name[0]
         graph.add_node(Node(entity_name, shape='box', peripheries=entity_border_count(entity.has_entity_modifier)))
@@ -57,7 +69,7 @@ def create_graph(entities: List[Entity], show_attributes=False) -> Dot:
         if entity.is_subject_in_relation is not None:
             for relation in entity.is_subject_in_relation:
                 relation_name = relation.relation_name[0]
-                related_entity_name = url_to_name(relation.has_object_entity)
+                related_entity_name = translate_name(url_to_name(relation.has_object_entity))
                 sorted_relative_names = sorted([entity_name, related_entity_name])
                 relation_id = f'#{relation_name}#'.join(sorted_relative_names)
                 graph.add_node(Node(relation_id, label=relation_name,
