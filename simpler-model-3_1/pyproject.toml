@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=64", "setuptools_scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [tool.black]
@@ -34,13 +34,20 @@ name = "simpler_model"
 dynamic = ["version"]
 description = "This is a Schema extraction API based on the OpenAPI 3.1 specification.  You can find out more about Swagger at [https://swagger.io](https://swagger.io). "
 readme = "README.md"
-keywords = ["OpenAPI", "Schema API - OpenAPI 3.1"]
-license = {file = "LICENSE.md"}
+keywords = ["entity-relationship-model", "ER", "extraction", "model", "simpler", "openapi"]
+# license = {file = "LICENSE.md"}
 classifiers = [
   "Development Status :: 3 - Alpha",
+  "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.7"
+]
+authors = [
+  {name = "Philipp Schmurr", email = "philipp.schmurr@kit.edu" }
+]
+maintainers = [
+  {name = "Philipp Schmurr", email = "philipp.schmurr@kit.edu" }
 ]
 
 dependencies = [
@@ -48,5 +55,14 @@ dependencies = [
   "pydantic~=2.6.4"
 ]
 
-[tool.setuptools.dynamic]
-version = {attr = "simpler_model.SPECIFICATION_VERSION"}
+[project.urls]
+"Homepage" = "https://github.com/Cpprentice/FAIRlead-model-extraction"
+"Bug Reports" = "https://github.com/Cpprentice/FAIRlead-model-extraction/issues"
+"Source" = "https://github.com/Cpprentice/FAIRlead-model-extraction"
+
+#[tool.setuptools.dynamic]
+#version = {attr = "simpler_model.SPECIFICATION_VERSION"}
+
+[tool.setuptools_scm]
+root = ".."
+git_describe_command = "git describe --long --match model-*"

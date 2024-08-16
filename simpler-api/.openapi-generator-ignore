@@ -32,3 +32,4 @@
 # the option `openapiGeneratorIgnoreList` (--openapi-generator-ignore-list in CLI for example).
 requirements.txt
 setup.cfg
+pyproject.toml

@@ -63,7 +63,7 @@ requires-python = ">=3.12"
 # Note that this is a list of additional keywords, separated
 # by commas, to be used to assist searching for the distribution in a
 # larger catalog.
-keywords = ["entity-relationship-model", "extraction", "model", "api"]
+keywords = ["entity-relationship-model", "ER", "extraction", "model", "simpler"]
 
 # This should be your name or the name of the organization who originally
 # authored the project, and a valid email address corresponding to the name
@@ -91,7 +91,7 @@ classifiers = [
 
   # Indicate who your project is intended for
   "Intended Audience :: Developers",
-  "Topic :: Software Development :: Build Tools",
+  # "Topic :: Software Development :: Build Tools",
 
   # Pick your license as you wish
   "License :: OSI Approved :: MIT License",
@@ -117,5 +117,6 @@ test = ["pytest", "pytest-mock", "coverage"]
 "Source" = "https://github.com/Cpprentice/FAIRlead-model-extraction"
 
 [tool.setuptools_scm]
-tag_regex = "^core-(?P<version>\\d+(?:\\.\\d+){0,2}[^\\+]*)(?:\\+.*)?$"
+# tag_regex = "^core-(?P<version>\\d+(?:\\.\\d+){0,2}[^\\+]*)(?:\\+.*)?$"
 root = ".."
+git_describe_command = "git describe --long --match core-*"
