@@ -53,4 +53,4 @@ dependencies = [
 ]
 
 [tool.setuptools.dynamic]
-version = {attr = "simpler_api.VERSION"}
+version = {attr = "simpler_api.SPECIFICATION_VERSION"}

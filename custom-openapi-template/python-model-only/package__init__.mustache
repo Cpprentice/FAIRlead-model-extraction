@@ -4,6 +4,6 @@ from {{packageName}}.models.{{classFilename}} import {{classname}}
 {{/model}}
 {{/models}}
 
-VERSION = '{{appVersion}}'
+SPECIFICATION_VERSION = '{{appVersion}}'
 
-__all__ = [{{#models}}{{#model}}'{{classname}}'{{^-last}}, {{/-last}}{{/model}}{{/models}}]
+__all__ = [{{#models}}{{#model}}'{{classname}}'{{^-last}}, {{/-last}}{{/model}}{{/models}}, 'SPECIFICATION_VERSION']

@@ -1,22 +1,15 @@
 templateDir: /local/custom-openapi-template/python-model-only
-# openapiGeneratorIgnoreList: !!set
-#   ? setup.cfg
-#   ? requirements.txt
-#   ? src/simpler_model/main.py
-#   ? src/simpler_model/security_api.py
-#   ? src/simpler_model/impl/*
-#   ? src/simpler_model/apis/*
-#   ? src/simpler_model/models/extra_models.py
-openapiGeneratorIgnoreList:
-  - setup.cfg
-  - requirements.txt
-  - Dockerfile
-  - docker-compose.yaml
-  - src/simpler_model/main.py
-  - src/simpler_model/security_api.py
-  - src/simpler_model/impl/*
-  - src/simpler_model/apis/*
-  - src/simpler_model/models/extra_models.py
+# the ignore list is theoretically only necessary for the first generation - afterwards it is best to just edit the ignore file that has been added to git
+#openapiGeneratorIgnoreList:
+#  - setup.cfg
+#  - requirements.txt
+#  - Dockerfile
+#  - docker-compose.yaml
+#  - src/simpler_model/main.py
+#  - src/simpler_model/security_api.py
+#  - src/simpler_model/impl/*
+#  - src/simpler_model/apis/*
+#  - src/simpler_model/models/extra_models.py
 globalProperties:
   models: ""
   supportingFiles: ""

@@ -49,4 +49,4 @@ dependencies = [
 ]
 
 [tool.setuptools.dynamic]
-version = {attr = "simpler_model.VERSION"}
+version = {attr = "simpler_model.SPECIFICATION_VERSION"}

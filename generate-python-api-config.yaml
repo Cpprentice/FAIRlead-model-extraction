@@ -1,8 +1,9 @@
 templateDir: /local/custom-openapi-template/python-fastapi-external-model
-openapiGeneratorIgnoreList:
-  - setup.cfg
-  - requirements.txt
-  # - .openapi-generator-ignore  # specifiying this here does not really make sense since the file is written anyway when we use openapiGeneratorIgnoreLis
+# the ignore list is theoretically only necessary for the first generation - afterwards it is best to just edit the ignore file that has been added to git
+#openapiGeneratorIgnoreList:
+#  - setup.cfg
+#  - requirements.txt
+#   # - .openapi-generator-ignore  # specifiying this here does not really make sense since the file is written anyway when we use openapiGeneratorIgnoreList
 #  - src/simpler_model/models/extra_models.py
 
 # ignoreFileOverride: generate-python-api-ignore  # for some reason this does not work at the moment - I think I had it working with an older version though
