@@ -8,6 +8,7 @@ from simpler_api.impl.plugins import get_cursor
 from simpler_api.apis.schema_api_base import BaseSchemaApi
 from simpler_api.impl.storage import get_storage
 from simpler_api.models.model_schema import ModelSchema
+from simpler_core.dot import create_graph
 
 
 class SchemaApi(BaseSchemaApi):
@@ -30,7 +31,13 @@ class SchemaApi(BaseSchemaApi):
         schemaId: str,
         entity_prefix: str,
     ) -> ModelSchema:
-        pass
+        storage = get_storage()
+        for data_name in storage.list_available_data():
+            if data_name == schemaId:
+                return ModelSchema(
+                    id=data_name
+                )
+        raise HTTPException(status_code=404, detail="Schema not found")
 
     def get_schema_diagram(
         self,
@@ -38,34 +45,11 @@ class SchemaApi(BaseSchemaApi):
         schemaId: str,
         show_attributes: bool,
     ) -> str:
-        graph = pydot.Dot(f'{schemaId}_graph', graph_type='graph')
-        graph.set_fontname("Helvetica,Arial,sans-serif")
-        graph.add_node(pydot.Node('node', fontname='Helvetica,Arial,sans-serif'))
-        graph.add_node(pydot.Node('edge', fontname='Helvetica,Arial,sans-serif'))
 
         cursor = get_cursor(request, schemaId)
         entities = cursor.get_all_entities()
-        border_count = {'weak': 2, 'strong': 1}
-        relation_border_count = {True: 2, False: 1}
 
-        for entity in entities:
-            graph.add_node(pydot.Node(entity.name, shape='box', peripheries=border_count[entity.type]))
-            for related_entity in entity.related_entities:
-                sorted_relative_names = sorted([entity.name, related_entity.name])
-                relation_name = f'#{related_entity.relation_name}#'.join(sorted_relative_names)
-                graph.add_node(pydot.Node(relation_name, label=related_entity.relation_name, shape='diamond',
-                                          style='filled', fillcollor='lightgrey',
-                                          peripheries=relation_border_count[related_entity.is_identifying]))
-                graph.add_edge(pydot.Edge(entity.name, relation_name, label=related_entity.cardinalities[1]))
-                graph.add_edge(pydot.Edge(related_entity.name, relation_name, label=related_entity.cardinalities[0]))
-            if show_attributes:
-                for attribute in entity.attributes:
-                    attribute_id = f'{entity.name}#{attribute.name}'
-                    attribute_label = attribute.name
-                    if attribute.is_key:
-                        attribute_label = f'<<u>{attribute_label}</u>>'
-                    graph.add_node(pydot.Node(attribute_id, label=attribute_label, shape='ellipse'))
-                    graph.add_edge(pydot.Edge(entity.name, attribute_id))
+        graph = create_graph(entities, show_attributes)
 
         requested_data_type = request.headers['accept']
         if requested_data_type == 'image/svg+xml':

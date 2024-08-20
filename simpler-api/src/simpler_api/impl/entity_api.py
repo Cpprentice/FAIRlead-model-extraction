@@ -5,6 +5,7 @@ from fastapi import HTTPException, Request
 
 from simpler_api.impl.plugins import get_cursor
 from simpler_api.apis.entity_api_base import BaseEntityApi
+from simpler_api.impl.schema_urls import introduce_api_urls_to_entity_list, introduce_api_urls_to_entity
 from simpler_api.models.entity import Entity
 from simpler_api.models.model_schema import ModelSchema
 from simpler_core.plugin import InputDataError
@@ -25,9 +26,12 @@ class EntityApi(BaseEntityApi):
             raise HTTPException(status_code=404, detail="Schema not found")
 
         try:
-            return cursor.get_all_entities()
+            entities = cursor.get_all_entities()
         except InputDataError as ex:
             raise HTTPException(status_code=400, detail="Schema extraction failed due to invalid input data") from ex
+
+        introduce_api_urls_to_entity_list(entities, request, schemaId)
+        return entities
 
     def get_entity_by_id(
         self,
@@ -41,6 +45,9 @@ class EntityApi(BaseEntityApi):
             raise HTTPException(status_code=404, detail='Schema not found')
 
         try:
-            return cursor.get_entity_by_id(entityId)
+            entity = cursor.get_entity_by_id(entityId)
         except:
             raise HTTPException(status_code=404, detail="Entity not found")
+
+        introduce_api_urls_to_entity(entity, request, schemaId)
+        return entity
