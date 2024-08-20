@@ -12,6 +12,7 @@ for module in pkgutil.iter_modules():
         importlib.import_module(module.name)
 
 
+# TODO remove legacy request passing to plugins -> URLs are now created only in the API code itself
 def get_cursor(request: Request, name: str) -> DataSourceCursor:
     storage = get_storage()
     plugin_name = storage.get_plugin_name(name)

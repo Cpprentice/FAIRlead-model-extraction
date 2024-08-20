@@ -3,18 +3,21 @@ import collections
 import functools
 import io
 import shutil
+from contextlib import ExitStack
 from pathlib import Path
 from tempfile import TemporaryFile, NamedTemporaryFile
 from typing import List, Dict
 
 from rdflib import Graph, RDF, OWL, RDFS
 
+from simpler_core.cardinality import create_cardinality
 from simpler_core.plugin import DataSourcePlugin, DataSourceType
 from simpler_core.rdf import (extract_ontology_concepts, make_n_triples_stream, get_cardinality_restrictions,
                               build_cardinality, merge_cardinalities, stringify_cardinality)
 
 try:
-    from simpler_model import Entity, Relation, Attribute
+    from simpler_model import Entity, Relation, Attribute, AttributeModifier, RelationModifier, EntityModifier
+
     EntityLink = Relation
 except ImportError:
     from simpler_model import Entity, EntityLink, Attribute
@@ -180,6 +183,7 @@ class OwlDataSourceType(DataSourceType):
     name = 'OWL'
     inputs = [
         'ontology',
+        'ontology_extension',
         'data'
     ]
 
@@ -219,11 +223,25 @@ class OwlDataSourcePlugin(DataSourcePlugin):
         # return
 
         with self.storage.get_data(name) as stream_lookup:
-            if 'ontology' in stream_lookup:
-                with make_n_triples_stream(stream_lookup['ontology']) as n_triples_stream:
-                    stream_path_url = Path(n_triples_stream.name).as_uri().replace('///', '//')
-                    classes, object_properties, data_properties, property_restrictions, world, ontology = \
-                        extract_ontology_concepts(n_triples_stream, stream_path_url)
+            streams_to_load = {'ontology', 'ontology_extension'} & set(stream_lookup.keys())
+            with ExitStack() as stack:
+                streams = [
+                    stack.enter_context(make_n_triples_stream(stream_lookup[stream_name]))
+                    for stream_name in streams_to_load
+                ]
+                streams_with_url = [
+                    (stream, Path(stream.name).as_uri().replace('///', '//'))
+                    for stream in streams
+                ]
+                classes, object_properties, data_properties, world, ontologies = \
+                    extract_ontology_concepts(streams_with_url)
+
+            # if 'ontology' in stream_lookup:
+            #     with make_n_triples_stream(stream_lookup['ontology']) as n_triples_stream:
+            #         stream_path_url = Path(n_triples_stream.name).as_uri().replace('///', '//')
+            #         streams.append((n_triples_stream, stream_path_url))
+            #         classes, object_properties, data_properties, world, ontologies = \
+            #             extract_ontology_concepts([])
 
             object_property_query = object_property_query_template.format(
                 ' '.join(f'<{class_.iri}>' for class_ in classes),
@@ -245,7 +263,7 @@ class OwlDataSourcePlugin(DataSourcePlugin):
                     stream.close()
                     data_ontology = world.get_ontology(stream_path_url).load()
 
-                ontology.imported_ontologies.append(data_ontology)
+                ontologies[0].imported_ontologies.append(data_ontology)
                 object_property_query_data = set(tuple(x) for x in world.sparql(object_property_query))
                 direct_instance_query_data = set(x[0] for x in world.sparql(direct_instance_query))
 
@@ -273,25 +291,27 @@ class OwlDataSourcePlugin(DataSourcePlugin):
                 if class_ not in direct_instance_query_data:
                     continue
             entity = Entity(
-                url=f'http://localhost:7373/schemata/mondial-rdf/entities/{class_.name}',
-                name=class_.name,
-                type='strong',
-                attributes=[],
-                related_entities=[],
-                key=None
+                entity_name=[class_.name],
+                has_attribute=[],
+                has_entity_modifier=None,
+                is_object_in_relation=[],
+                is_subject_in_relation=[]
             )
 
             attributes = []
+            attributes.append(Attribute(
+                attribute_name=['IRI'],
+                has_attribute_modifier=[AttributeModifier(attribute_modifier='key')]
+            ))
+
             for data_prop in data_properties:
-                if all(clause._satisfied_by(class_) for clause in data_prop.domain):
+                if any(clause._satisfied_by(class_) for clause in data_prop.domain):
                     attribute = Attribute(
-                        name=data_prop.name,
-                        type=type_factory(data_prop.range),
-                        is_collection=False,
-                        is_key=False
+                        attribute_name=[data_prop.name],
+                        has_attribute_modifier=None
                     )
                     attributes.append(attribute)
-            entity.attributes = attributes
+            entity.has_attribute = attributes
 
             relations = []
             for object_prop in object_properties:
@@ -300,14 +320,22 @@ class OwlDataSourcePlugin(DataSourcePlugin):
                 # all_cardinalities = [general_cardinality]
 
                 # TODO reconsider any instead of all here - i think there was a reason for it
+                #  - multiple domain triples mean the intersection of all domains not the union - so all seems correct
                 if all(clause._satisfied_by(class_) for clause in object_prop.domain):
                     for target_class in [
                         target_class
                         for target_class in classes
-                        if any(clause._satisfied_by(target_class) for clause in object_prop.range)
+                        if all(clause._satisfied_by(target_class) for clause in object_prop.range)
                     ]:
                         if only_include_if_data_exists:
-                            if (class_, object_prop, target_class) not in object_property_query_data:
+                            # if target_class not in direct_instance_query_data:
+                            #     continue
+                            # old implementation tracking property occurrence is now replaced by
+                            #  filtering if target class has instances <-- and has been reversed because it
+                            #  caused thousands of more relations
+                            if ((class_, object_prop, target_class) not in object_property_query_data and
+                                    (target_class, object_prop.inverse_property, class_) not in
+                                    object_property_query_data):
                                 continue
                             x = 42
 
@@ -325,16 +353,33 @@ class OwlDataSourcePlugin(DataSourcePlugin):
                         else:
                             inverse_cardinality = build_cardinality([])
 
-                        entity_link = EntityLink(
-                            name=target_class.name,
-                            relation_name=object_prop.name,
-                            cardinalities=stringify_cardinality(combined_cardinality, inverse_cardinality),
-                            link=f'http://localhost:7373/schemata/mondial-rdf/entities/{target_class.name}',
+                        relation = Relation(
+                            relation_name=[object_prop.name],
+                            has_object_entity=target_class.name,
+                            has_subject_entity=class_.name,
+                            object_cardinality=create_cardinality(combined_cardinality),
+                            subject_cardinality=create_cardinality(inverse_cardinality),
+                            has_attribute=[],
+                            has_relation_modifier=[RelationModifier(relation_modifier='identifying')] \
+                                if inverse_cardinality[0] > 0 else None
                         )
-                        relations.append(entity_link)
-            entity.related_entities = relations
+                        if relation.has_relation_modifier is not None:
+                            make_weak = True
+                        relations.append(relation)
+            entity.is_subject_in_relation = relations
 
-            entities[entity.name].append(entity)
+            # if make_weak:
+            #     entity.has_entity_modifier = [EntityModifier(entity_modifier='weak')]
+
+            entities[entity.entity_name[0]].append(entity)
+
+        for local_entity_list in entities.values():
+            for entity in local_entity_list:
+                for relation in entity.is_subject_in_relation:
+                    target_entity = entities[relation.has_object_entity][0]
+                    if relation.has_relation_modifier is not None:
+                        target_entity.has_entity_modifier = [EntityModifier(entity_modifier='weak')]
+
         return entities
 
     def get_strong_entities(self, name: str) -> List[Entity]:

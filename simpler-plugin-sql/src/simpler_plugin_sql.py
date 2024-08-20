@@ -2,15 +2,18 @@ import codecs
 import collections
 import functools
 import itertools
+import sys
 from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import List, Dict, Set
 
 from sqlalchemy import create_engine, Connection, text
 
+from simpler_core.cardinality import create_cardinality, merge_cardinalities
 from simpler_core.plugin import DataSourcePlugin, DataSourceType
 try:
-    from simpler_model import Attribute, Relation, Entity
+    from simpler_model import Attribute, Relation, Entity, EntityModifier, RelationModifier
+
     EntityLink = Relation
 except ImportError:
     from simpler_model import Attribute, Entity, EntityLink
@@ -246,17 +249,15 @@ class SqlDataSourcePlugin(DataSourcePlugin):
         for row in result:
             column = Column(**row._mapping)
 
-            column_type = 'string'
-            if any(x in column.data_type for x in ['int', 'serial']):
-                column_type = 'int'
-            elif any(x in column.data_type for x in ['real', 'double', 'numeric']):
-                column_type = 'float'
+            # column_type = 'string'
+            # if any(x in column.data_type for x in ['int', 'serial']):
+            #     column_type = 'int'
+            # elif any(x in column.data_type for x in ['real', 'double', 'numeric']):
+            #     column_type = 'float'
 
             attribute_lookup[column.table_name].append(Attribute(
-                name=column.column_name,
-                type=column_type,
-                is_collection=False,
-                is_key=False  # TODO populate key state of column
+                attribute_name=[column.column_name],
+                has_attribute_modifier=None  # TODO populate key state of column
             ))
         return attribute_lookup
 
@@ -298,6 +299,37 @@ class SqlDataSourcePlugin(DataSourcePlugin):
                 self._get_foreign_keys_that_apply_to_determining_entity_weakness(foreign_key_objects)
             attribute_lookup = self._get_attribute_lookup(cursor)
 
+            grouped_foreign_keys = collections.defaultdict(list)
+            for f_key in filtered_foreign_key_objects:
+                grouped_foreign_keys[f_key.constraint_name].append(f_key)
+
+            cardinalities = {
+                (fk.source, fk.target): (0, 1) if any(x.nullable for x in group) else (1, 1)
+                for constraint_name, group in grouped_foreign_keys.items()
+                for fk in group
+            }
+            added_transitives = {1}
+            while added_transitives:
+                added_transitives = set()
+                for (source, target), cardinality in cardinalities.items():
+                    for (inner_source, inner_target), inner_cardinality in cardinalities.items():
+                        if target == inner_source and (source, inner_target) not in cardinalities:
+                            added_transitives.add((
+                                (source, inner_target),
+                                merge_cardinalities(cardinality, inner_cardinality)
+                            ))
+                for key, value in added_transitives:
+                    cardinalities[key] = value
+            grouped_cardinalities = collections.defaultdict(list)
+            for (source, target), cardinality in cardinalities.items():
+                source_table_name, _ = source.rsplit('.', maxsplit=1)
+                target_table_name, _ = target.rsplit('.', maxsplit=1)
+                grouped_cardinalities[(source_table_name, target_table_name)].append(cardinality)
+            cardinality_implications = {
+                key: functools.reduce(merge_cardinalities, cardinality_list, cardinality_list[0])
+                for key, cardinality_list in grouped_cardinalities.items()
+            }
+
             entities = []
             for table_name in table_names:
                 name_set = set()
@@ -305,28 +337,40 @@ class SqlDataSourcePlugin(DataSourcePlugin):
                 relations = []
 
                 for foreign_key in foreign_key_objects:
-                    if foreign_key.primary_table == table_name:
-                        fk_short_name = foreign_key.foreign_table.replace('public.', '')
+                    # if foreign_key.primary_table == table_name:
+                    if foreign_key.foreign_table == table_name:
+                        # fk_short_name = foreign_key.foreign_table.replace('public.', '')
+                        fk_short_name = foreign_key.primary_table.replace('public.', '')
 
                         if fk_short_name not in name_set:
                             name_set.add(fk_short_name)
+
+                            subject_cardinality = create_cardinality((0, sys.maxsize))
+                            if (foreign_key.primary_table, table_name) in cardinality_implications:
+                                subject_cardinality = create_cardinality(
+                                    cardinality_implications[(foreign_key.primary_table, table_name)])
+
                             relations.append(
-                                EntityLink(
-                                    name=fk_short_name,
-                                    relation_name=foreign_key.constraint_name,
-                                    link=self.url_factory('get_entity_by_id', schemaId=name, entityId=fk_short_name),
-                                    cardinalities=cardinality_maker(foreign_key)
+                                Relation(
+                                    relation_name=[foreign_key.constraint_name],
+                                    has_object_entity=fk_short_name,
+                                    has_subject_entity=short_name,
+                                    object_cardinality=create_cardinality((0, 1) if
+                                                                          foreign_key.nullable else (1, 1)),
+                                    subject_cardinality=subject_cardinality,
+                                    has_attribute=[],
+                                    has_relation_modifier=[RelationModifier(relation_modifier='identifying')]
+                                        if foreign_key in filtered_foreign_key_objects else None
                                 )
                             )
-
+                is_weak = any(foreign_key.foreign_table == table_name for foreign_key in filtered_foreign_key_objects)
+                # is_weak = any(foreign_key.primary_table == table_name for foreign_key in filtered_foreign_key_objects)
                 entities.append(Entity(
-                    name=short_name,
-                    url=self.url_factory('get_entity_by_id', schemaId=name, entityId=short_name),
-                    type='strong' if not any(foreign_key.foreign_table == table_name for foreign_key in
-                                             filtered_foreign_key_objects) else 'weak',
-                    attributes=attribute_lookup[table_name],
-                    key=None,
-                    related_entities=relations
+                    entity_name=[short_name],
+                    has_attribute=attribute_lookup[table_name],
+                    has_entity_modifier=None if not is_weak else [EntityModifier(entity_modifier='weak')],
+                    is_object_in_relation=[],
+                    is_subject_in_relation=relations
                 ))
         return entities
 

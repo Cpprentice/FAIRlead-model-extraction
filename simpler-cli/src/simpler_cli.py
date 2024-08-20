@@ -8,7 +8,8 @@ from typing import List, Callable
 
 from simpler_core.dot import create_graph
 from simpler_core.plugin import DataSourcePlugin, DataSourceCursor, DataSourceType
-from simpler_core.schema import serialize_entity_list_to_yaml, load_external_schema_from_yaml, extend_schema_from_yaml
+from simpler_core.schema import serialize_entity_list_to_yaml, load_external_schema_from_yaml, extend_schema_from_yaml, \
+    apply_schema_correction_if_available
 from simpler_core.storage import ManualFilesystemDataSourceStorage
 
 
@@ -96,10 +97,13 @@ def extract_command(args: Namespace, parser: ArgumentParser):
     cursor: DataSourceCursor = plugin.get_cursor('cli')
 
     entities = cursor.get_all_entities()
+
+    entities = apply_schema_correction_if_available(entities, storage, 'cli')
+
     output_string = ''
 
     if args.format == 'DOT':
-        dot = create_graph(entities, show_attributes=True)
+        dot = create_graph(entities, show_attributes=False)
         output_string = str(dot)
     elif args.format == 'JSON':
         dicts = [m.dict() for m in entities]

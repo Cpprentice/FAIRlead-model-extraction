@@ -6,9 +6,11 @@ from fastapi import HTTPException, Request
 from simpler_api.impl.plugins import get_cursor
 from simpler_api.apis.entity_api_base import BaseEntityApi
 from simpler_api.impl.schema_urls import introduce_api_urls_to_entity_list, introduce_api_urls_to_entity
+from simpler_api.impl.storage import get_storage
 from simpler_api.models.entity import Entity
 from simpler_api.models.model_schema import ModelSchema
 from simpler_core.plugin import InputDataError
+from simpler_core.schema import apply_schema_correction_if_available
 
 
 class EntityApi(BaseEntityApi):
@@ -31,6 +33,7 @@ class EntityApi(BaseEntityApi):
             raise HTTPException(status_code=400, detail="Schema extraction failed due to invalid input data") from ex
 
         introduce_api_urls_to_entity_list(entities, request, schemaId)
+        entities = apply_schema_correction_if_available(entities, get_storage(), schemaId)
         return entities
 
     def get_entity_by_id(
@@ -50,4 +53,5 @@ class EntityApi(BaseEntityApi):
             raise HTTPException(status_code=404, detail="Entity not found")
 
         introduce_api_urls_to_entity(entity, request, schemaId)
-        return entity
+        entities = apply_schema_correction_if_available([entity], get_storage(), schemaId)
+        return entities[0]  # TODO check if the first is always the correct one - there might be added ones

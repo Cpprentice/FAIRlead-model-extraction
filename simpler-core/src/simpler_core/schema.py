@@ -11,6 +11,7 @@ from pydantic_core.core_schema import ModelField
 from pydantic_partial import create_partial_model
 from pydantic_partial._compat import PydanticCompat
 
+from simpler_core.storage import DataSourceStorage
 from simpler_model import Entity
 try:
     from simpler_model import Relation
@@ -18,6 +19,17 @@ try:
 except ImportError:
     from simpler_model import EntityLink
     Relation = EntityLink
+
+
+def apply_schema_correction_if_available(
+        entities: List[Entity],
+        storage: DataSourceStorage,
+        schema_name: str
+) -> List[Entity]:
+    with storage.get_data(schema_name) as stream_lookup:
+        if 'schema-correction' in stream_lookup:
+            return extend_schema_from_yaml(entities, stream_lookup['schema-correction'])
+    return entities
 
 
 def load_external_schema_from_yaml(binary_stream: BinaryIO) -> List[Entity]:

@@ -10,6 +10,7 @@ from owlready2 import World, Ontology, sync_reasoner_pellet, DataPropertyClass, 
     EXACTLY, MAX, MIN, Restriction
 from rdflib import Graph
 
+from simpler_core.cardinality import merge_cardinalities
 
 relevant_restrictions = {
     EXACTLY, MAX, MIN
@@ -27,7 +28,7 @@ class SerializationContext:
     subject_stack: List[str]
 
 
-def build_iterative_class_list(ontology: Ontology) -> List[ThingClass]:
+def build_iterative_class_list(ontology: Ontology | World) -> List[ThingClass]:
     class_set = set(ontology.classes())
     new_classes = {1}
     while len(new_classes) > 0:
@@ -38,23 +39,25 @@ def build_iterative_class_list(ontology: Ontology) -> List[ThingClass]:
     return list(class_set)
 
 
-def extract_ontology_concepts(n_triples_stream: IO, ontology_base_url: str) -> Tuple[
+def extract_ontology_concepts(n_triples_streams: List[Tuple[IO, str]]) -> Tuple[
     List[ThingClass],
     List[ObjectPropertyClass],
     List[DataPropertyClass],
     World,
-    Ontology
+    List[Ontology]
 ]:
     world = World()
-    ontology = world.get_ontology(ontology_base_url).load(fileobj=n_triples_stream)
+    ontologies = []
+    for n_triples_stream, ontology_base_url in n_triples_streams:
+        ontologies.append(world.get_ontology(ontology_base_url).load(fileobj=n_triples_stream))
 
     sync_reasoner_pellet(world)
 
-    classes = sorted(build_iterative_class_list(ontology), key=lambda x: x.name)
-    data_properties = sorted(ontology.data_properties(), key=lambda x: x.name)
-    object_properties = sorted(ontology.object_properties(), key=lambda x: x.name)
+    classes = sorted(build_iterative_class_list(world), key=lambda x: x.name)
+    data_properties = sorted(world.data_properties(), key=lambda x: x.name)
+    object_properties = sorted(world.object_properties(), key=lambda x: x.name)
 
-    return classes, object_properties, data_properties, world, ontology
+    return classes, object_properties, data_properties, world, ontologies
 
 
 @contextmanager
@@ -79,16 +82,6 @@ def build_cardinality(restrictions: List[Restriction]) -> Tuple[int, int]:
         elif restriction.type == MAX:
             cardinality = merge_cardinalities(cardinality, (0, restriction.cardinality))
     return cardinality
-
-
-def merge_cardinalities(c_a: Tuple[int, int], c_b: Tuple[int, int]) -> Tuple[int, int]:
-    min_a, max_a = c_a
-    min_b, max_b = c_b
-    if min_a != min_b and min_a != 0 and min_b != 0:
-        raise ValueError('The cardinalities to merge have both non-zero min values that are not equal')
-    if max_a != max_b and max_a != sys.maxsize and max_b != sys.maxsize:
-        raise ValueError('The cardinalities to merge have both non-limited max values that are not equal')
-    return max(min_a, min_b), min(max_a, max_b)
 
 
 def get_cardinality_restrictions(

@@ -9,7 +9,8 @@ cardinality_translation = {
     'exactlyOne': '1',
     'any': 'n',
     'oneOrNone': '0..1',
-    'oneOrMore': '1..n'
+    'oneOrMore': '1..n',
+    'unsupported': '?'
 }
 
 
