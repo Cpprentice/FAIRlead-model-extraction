@@ -282,3 +282,27 @@ def merge_schema_dicts(base_dict: Dict, update_dict: Dict) -> Dict:
         if key not in result:
             result[key] = update_value
     return result
+
+
+path_separator = '$'
+
+
+def make_hierarchical_name(parent_name: str | None, child_name: str) -> str:
+    if parent_name is None:
+        parent_name = ''
+    if len(parent_name) > 0 and not parent_name.startswith(path_separator):
+        parent_name = f'{path_separator}{parent_name}'
+    return f'{parent_name}{path_separator}{child_name}'
+
+
+def split_prefix_and_item_name(path: str) -> Tuple[str, str]:
+    if path_separator not in path:
+        return '', path
+    prefix, name = path.rsplit(path_separator, maxsplit=1)
+    return prefix, name
+
+
+def is_hierarchical_path(path: str) -> bool:
+    if path.startswith(path_separator):
+        return path_separator in path[1:]
+    return path_separator in path
