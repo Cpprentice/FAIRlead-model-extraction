@@ -1,5 +1,6 @@
 import collections
 import functools
+import sys
 from tempfile import TemporaryDirectory
 from typing import List, Dict, Tuple, Iterable, Callable, Any, Iterator
 import urllib.parse
@@ -12,9 +13,14 @@ from xmlschema.validators import (XsdComplexType, XsdUnique, XsdKey, XsdKeyref, 
                                   Xsd11Unique, Xsd11Element, XsdSimpleType, Xsd11AtomicRestriction,
                                   XsdAtomicRestriction, XsdAtomicBuiltin)
 
+from simpler_core.cardinality import create_cardinality
 from simpler_core.plugin import DataSourcePlugin, DataSourceType, InputDataError
+from simpler_core.schema import make_hierarchical_name, is_hierarchical_path, split_prefix_and_item_name
+
 try:
-    from simpler_model import Relation, Entity, Attribute
+    from simpler_model import Relation, Entity, Attribute, EntityModifier, Cardinality, RelationModifier, \
+        AttributeModifier
+
     EntityLink = Relation
 except ImportError:
     from simpler_model import Entity, Attribute, EntityLink
@@ -31,7 +37,8 @@ class EnhancedXsdElement:
 
     @property
     def path(self) -> str:
-        return f'{self.parent.path if self.parent is not None else ""}/{self.xsd_element.prefixed_name}'
+        prefix = f'{self.parent.path}' if self.parent is not None else ''
+        return f'{prefix}/{self.xsd_element.prefixed_name}'
 
     @property
     def children(self) -> Iterator['EnhancedXsdElement']:
@@ -121,19 +128,26 @@ def find_all_elements_recursively(
     return elements
 
 
+def cardinality_factory_single(occurs: Tuple) -> Cardinality:
+    occurs = tuple(
+        int(x) if x is not None else sys.maxsize
+        for x in occurs
+    )
+    return create_cardinality(occurs)
+
+
 def build_attributes_and_related_entities_enhanced(
         path: str,
         element: EnhancedXsdElement
-) -> Tuple[List[Attribute], List[EntityLink]]:
+) -> Tuple[List[Attribute], List[Relation]]:
     attributes = []
     related_entities = []
+    quoted_path = urllib.parse.quote(path, safe='')
 
     for attribute_key in [x for x in element.attributes if x is not None]:
         attributes.append(Attribute(
-            name=attribute_key,
-            type='string',  # TODO if an xsd or dtd is available we could make this more precise
-            is_collection=False,
-            is_key=False
+            attribute_name=[attribute_key],
+            has_attribute_modifier=None
         ))
         # attribute_obj = element.attributes[attribute_key].type
         # TODO if the attribute is of type "xs:IDREFS" (plural) this actually means a whitespace separated list of ids.
@@ -143,10 +157,8 @@ def build_attributes_and_related_entities_enhanced(
     try:
         if isinstance(element.type.content, XsdSimpleType):
             attributes.append(Attribute(
-                name='value',
-                type='string',
-                is_collection=False,
-                is_key=False
+                attribute_name=['value'],
+                has_attribute_modifier=None
             ))
     except:
         pass
@@ -159,18 +171,6 @@ def build_attributes_and_related_entities_enhanced(
         if cardinality == ['n', 'n']:
             cardinality = ['n', 'm']
         return cardinality
-
-    def cardinality_factory_single(occurs: Tuple) -> str:
-        occurs = (
-            str(x) if x is not None else 'n'
-            for x in occurs
-        )
-        min_occurs, max_occurs = occurs
-        if min_occurs != max_occurs:
-            if min_occurs == '0' and max_occurs == 'n':
-                return 'n'
-            return f'{min_occurs}..{max_occurs}'
-        return min_occurs
 
     def extract_attribute_occurrence(attribute: XsdAttribute) -> Tuple[int, int]:
         min_occur = 0
@@ -191,21 +191,20 @@ def build_attributes_and_related_entities_enhanced(
         quoted_child_path = urllib.parse.quote(child.path, safe='')
         if is_primitive_element(child):
             attributes.append(Attribute(
-                name=child.prefixed_name,
-                type='string',  # TODO again check if we can get the type from xsd or dtd
-                is_collection=child.max_occurs is None or child.max_occurs > 1,
-                is_key=False
+                attribute_name=[child.prefixed_name],
+                has_attribute_modifier=None
             ))
         else:
-            related_entities.append(EntityLink(
-                name=child.path[1:],
-                relation_name='IsChild',
-                cardinalities=[
-                    cardinality_factory_single(child.occurs),
-                    '1'
-                ],
-                link=f'http://localhost:7373/schemata/iec61850/entities/{quoted_child_path}',
-                is_identifying=True
+            related_entities.append(Relation(
+                relation_name=['IsChild'],
+                # has_object_entity=f'{quoted_child_path}',
+                has_object_entity=f'{child.path[1:]}',
+                # has_subject_entity=f'{quoted_path}',
+                has_subject_entity=f'{path[1:]}',
+                object_cardinality=cardinality_factory_single(child.occurs),
+                subject_cardinality=cardinality_factory_single((1, 1)),
+                has_attribute=[],
+                has_relation_modifier=[RelationModifier(relation_modifier='identifying')]
             ))
 
     for reference in sorted(element.selected_by, key=lambda x: 0 if isinstance(x, XsdKey) else 1):
@@ -220,7 +219,9 @@ def build_attributes_and_related_entities_enhanced(
             attributes_to_remove = []
             for field in field_objects:
                 for attribute in attributes:
-                    if field.name == attribute.name and not attribute.is_key:
+                    if field.name == attribute.attribute_name[0] and not (
+                            attribute.has_attribute_modifier and
+                            attribute.has_attribute_modifier[0].attribute_modifier == 'key'):
                         attributes_to_remove.append(attribute)
             for attribute in attributes_to_remove:
                 attributes.remove(attribute)
@@ -231,15 +232,16 @@ def build_attributes_and_related_entities_enhanced(
             ]
             field_occur = unify_occurrences(field_occurs)
             encoded_name = urllib.parse.quote(target_element.prefixed_name, safe='')
-            related_entities.append(EntityLink(
-                name=target_element.prefixed_name,
-                relation_name=reference.prefixed_name,
-                cardinalities=[
-                    cardinality_factory_single(field_occur),
-                    'n'
-                    # cardinality_factory_single(target_element.occurs)
-                ],
-                link=f'http://localhost:7373/schemata/iec61850/entities/{encoded_name}'
+            related_entities.append(Relation(
+                relation_name=[reference.prefixed_name],
+                # has_object_entity=f'{encoded_name}',
+                has_object_entity=f'{target_element.prefixed_name}',
+                # has_subject_entity=f'{quoted_path}',
+                has_subject_entity=f'{path[1:]}',
+                object_cardinality=cardinality_factory_single(field_occur),
+                subject_cardinality=cardinality_factory_single((0, None)),
+                has_attribute=[],
+                has_relation_modifier=[]
             ))
         elif isinstance(reference, XsdKey):
             field_objects = [
@@ -249,81 +251,81 @@ def build_attributes_and_related_entities_enhanced(
             ]
             for field in field_objects:
                 for attribute in attributes:
-                    if attribute.name == field.name:
-                        attribute.is_key = True
+                    if attribute.attribute_name[0] == field.name:
+                        attribute.has_attribute_modifier = [AttributeModifier(attribute_modifier='key')]
 
     return attributes, related_entities
 
 
-def build_attributes_and_related_entities(
-        path: str,
-        element: XsdElement
-) -> Tuple[List[Attribute], List[EntityLink]]:
-    attributes = []
-    related_entities = []
-
-    mapper = {
-        'Xsd11Key': 'XsdKey',
-        'Xsd11Unique': 'XsdUnique',
-        'Xsd11Keyref': 'XsdKeyref'
-    }
-
-    def _mapper(name_in: str) -> str:
-        if name_in in mapper:
-            return mapper[name_in]
-        return name_in
-
-    relations = {
-        _mapper(type(x).__name__): x
-        for x in element.selected_by
-    }
-
-    for attribute_key in [x for x in element.attributes if x is not None]:
-
-        # if attribute_key in local_attribute_key_lookup:
-        #     x = 42
-        # if attribute_key in local_attribute_key_refs_lookup:
-        #     x = 42
-        # if attribute_key in local_attribute_unique_lookup:
-        #     x = 42
-        # TODO handle key creation
-        attributes.append(Attribute(
-            name=attribute_key,
-            type='string',  # TODO if an xsd or dtd is available we could make this more precise
-            is_collection=False
-        ))
-        # attribute_obj = element.attributes[attribute_key].type
-        # TODO if the attribute is of type "xs:IDREFS" (plural) this actually means a whitespace separated list of ids.
-        #  In that scenario we should at least set isCollection (or future cardinalities) to True. Maybe we even need
-        #  to create a sub-entity?
-
-    try:
-        if isinstance(element.type.content, XsdSimpleType):
-            attributes.append(Attribute(
-                name='value',
-                type='string',
-                isCollection=False
-            ))
-    except:
-        pass
-
-    children = [x for x in element if isinstance(x, XsdElement)]
-    for child in children:
-        child_path = f'{path}/{child.prefixed_name}'
-        quoted_child_path = urllib.parse.quote(child_path, safe='')
-        if is_primitive_element(child):
-            attributes.append(Attribute(
-                name=child.prefixed_name,
-                type='string',  # TODO again check if we can get the type from xsd or dtd
-                isCollection=child.max_occurs is None or child.max_occurs > 1
-            ))
-        else:
-            related_entities.append(EntityLink(
-                name=child_path[1:],
-                link=f'http://localhost:7373/schemata/iec61850/entities/{quoted_child_path}',
-            ))
-
-    return attributes, related_entities
+# def build_attributes_and_related_entities(
+#         path: str,
+#         element: XsdElement
+# ) -> Tuple[List[Attribute], List[EntityLink]]:
+#     attributes = []
+#     related_entities = []
+#
+#     mapper = {
+#         'Xsd11Key': 'XsdKey',
+#         'Xsd11Unique': 'XsdUnique',
+#         'Xsd11Keyref': 'XsdKeyref'
+#     }
+#
+#     def _mapper(name_in: str) -> str:
+#         if name_in in mapper:
+#             return mapper[name_in]
+#         return name_in
+#
+#     relations = {
+#         _mapper(type(x).__name__): x
+#         for x in element.selected_by
+#     }
+#
+#     for attribute_key in [x for x in element.attributes if x is not None]:
+#
+#         # if attribute_key in local_attribute_key_lookup:
+#         #     x = 42
+#         # if attribute_key in local_attribute_key_refs_lookup:
+#         #     x = 42
+#         # if attribute_key in local_attribute_unique_lookup:
+#         #     x = 42
+#         # TODO handle key creation
+#         attributes.append(Attribute(
+#             name=[attribute_key],
+#             type='string',  # TODO if an xsd or dtd is available we could make this more precise
+#             is_collection=False
+#         ))
+#         # attribute_obj = element.attributes[attribute_key].type
+#         # TODO if the attribute is of type "xs:IDREFS" (plural) this actually means a whitespace separated list of ids.
+#         #  In that scenario we should at least set isCollection (or future cardinalities) to True. Maybe we even need
+#         #  to create a sub-entity?
+#
+#     try:
+#         if isinstance(element.type.content, XsdSimpleType):
+#             attributes.append(Attribute(
+#                 name='value',
+#                 type='string',
+#                 isCollection=False
+#             ))
+#     except:
+#         pass
+#
+#     children = [x for x in element if isinstance(x, XsdElement)]
+#     for child in children:
+#         child_path = f'{path}/{child.prefixed_name}'
+#         quoted_child_path = urllib.parse.quote(child_path, safe='')
+#         if is_primitive_element(child):
+#             attributes.append(Attribute(
+#                 name=child.prefixed_name,
+#                 type='string',  # TODO again check if we can get the type from xsd or dtd
+#                 isCollection=child.max_occurs is None or child.max_occurs > 1
+#             ))
+#         else:
+#             related_entities.append(EntityLink(
+#                 name=child_path[1:],
+#                 link=f'http://localhost:7373/schemata/iec61850/entities/{quoted_child_path}',
+#             ))
+#
+#     return attributes, related_entities
 
 
 def group_by(
@@ -349,7 +351,7 @@ class XmlDataSourcePlugin(DataSourcePlugin):
     @staticmethod
     def _build_data_only_schema(root: lxml.etree._Element):
 
-        url_prefix = 'http://localhost:7373/schemata/iec61850/entities/'
+        # url_prefix = 'http://localhost:7373/schemata/iec61850/entities/'
 
         def is_simple_node(element: lxml.etree._Element) -> bool:
             if len(element.attrib) != 0:
@@ -359,29 +361,31 @@ class XmlDataSourcePlugin(DataSourcePlugin):
                     return False
             return True
 
-        def path_builder(entity: Entity) -> str:
-            if entity is None:
-                return ''
-            return urllib.parse.unquote(entity.url[len(url_prefix):])
+        # def path_builder(entity: Entity) -> str:
+        #     if entity is None:
+        #         return ''
+        #     return urllib.parse.unquote(entity.url[len(url_prefix):])
 
         def recurse_tree(start: lxml.etree._Element, parent: Entity = None, entities: Dict[str, List[Entity]] = None) -> Dict[str, List[Entity]]:
             if entities is None:
                 entities = collections.defaultdict(list)
-            parent_path = path_builder(parent)
+            # parent_path = path_builder(parent)
+            parent_path = parent.entity_name[0] if parent is not None else None
             siblings = entities[parent_path]
 
-            parent_path_with_slash = f'{parent_path}/' if parent_path else ''
+            # parent_path_with_slash = f'{parent_path}/' if parent_path else ''
             active_item_name = start.tag
-            active_item_path = f'{parent_path_with_slash}{active_item_name}'
-            active_item_quoted_path = urllib.parse.quote(active_item_path, safe='')
+            # active_item_path = f'{parent_path_with_slash}{active_item_name}'
+            active_item_path = make_hierarchical_name(parent_path, active_item_name)
+            # active_item_quoted_path = urllib.parse.quote(active_item_path, safe='')
             existing_spec: Entity | Attribute | None = None
             for sibling in siblings:
-                if sibling.name == active_item_path:
+                if sibling.entity_name[0] == active_item_path[1:]:
                     existing_spec = sibling
                     break
             if existing_spec is None and parent is not None:
-                for attribute in parent.attributes:
-                    if attribute.name == active_item_name:
+                for attribute in parent.has_attribute:
+                    if attribute.attribute_name[0] == active_item_name:
                         existing_spec = attribute
                         break
 
@@ -389,23 +393,29 @@ class XmlDataSourcePlugin(DataSourcePlugin):
                 if parent is not None:
                     if existing_spec is None:
                         attribute = Attribute(
-                            name=active_item_name,
-                            type='string',
-                            is_collection=False,
-                            is_key=False
+                            attribute_name=[active_item_name],
+                            has_attribute_modifier=None
                         )
-                        parent.attributes.append(attribute)
+                        parent.has_attribute.append(attribute)
                     # At this point there could be already an attribute with that name or even an entity - in both
                     #  cases we stick with the previous instance
                 else:
                     # this obviously implies that existing_spec is also None so no special treatment needed
                     entities[''].append(Entity(
-                        url=f'{url_prefix}{active_item_path}',
-                        name=active_item_path,
-                        type='strong',
-                        attributes=[],
-                        related_entities=[],
-                        key=None
+                        entity_name=[active_item_path[1:]],
+                        has_attribute=[],
+                        has_entity_modifier=[
+                            EntityModifier(entity_modifier='weak')
+                        ] if is_hierarchical_path(active_item_path) else None,
+                        is_object_in_relation=None,
+                        is_subject_in_relation=[]
+
+                        # url=f'{url_prefix}{active_item_path}',
+                        # name=active_item_path,
+                        # type='strong',
+                        # attributes=[],
+                        # related_entities=[],
+                        # key=None
                     ))
             else:
                 new_entity = None
@@ -416,72 +426,96 @@ class XmlDataSourcePlugin(DataSourcePlugin):
                     xml_parent: lxml.etree._Element = start.getparent()
                     if active_item_name not in xml_parent.attrib:
                         # this was therefore a simple child before - replace it with the complex one
-                        parent.attributes.remove(existing_spec)
+                        parent.has_attribute.remove(existing_spec)
 
                     # at this point we do either have a child and a tag with the same name or, a child that is
                     #  sometimes simple and sometimes not - in that case the simple one was just removed
                     new_entity = Entity(
-                        url=f'{parent.url}%2F{active_item_path}',
-                        name=active_item_path,
-                        type='weak',
-                        attributes=[],
-                        related_entities=[],
-                        key=None
+                        entity_name=[active_item_path[1:]],
+                        has_attribute=[],
+                        has_entity_modifier=[
+                            EntityModifier(entity_modifier='weak')
+                        ] if is_hierarchical_path(active_item_path) else None,
+                        is_object_in_relation=[],
+                        is_subject_in_relation=[]
+
+                        # url=f'{parent.url}%2F{active_item_path}',
+                        # name=active_item_path,
+                        # type='weak',
+                        # attributes=[],
+                        # related_entities=[],
+                        # key=None
                     )
-                    parent.related_entities.append(EntityLink(
-                        name=new_entity.name,
-                        relation_name='IsChild',
-                        cardinalities=['1', 'n'],
-                        link=new_entity.url,
-                        is_identifying=True
+                    parent.is_subject_in_relation.append(Relation(
+                        relation_name=['IsChild'],
+                        has_object_entity=new_entity.entity_name[0],
+                        has_subject_entity=f'{active_item_path[1:]}',
+                        object_cardinality=create_cardinality((0, sys.maxsize)),
+                        subject_cardinality=cardinality_factory_single((1, 1)),
+                        has_attribute=[],
+                        has_relation_modifier=[]
                     ))
                 elif isinstance(existing_spec, Entity):
                     # at the moment the only thing that can differ is the attributes - so let's check them
                     new_attribute_names = set(start.attrib.keys())
-                    old_attribute_names = set(x.name for x in existing_spec.attributes)
+                    old_attribute_names = set(x.attribute_name[0] for x in existing_spec.has_attribute)
                     attribute_names_to_add = (new_attribute_names ^ old_attribute_names) & new_attribute_names
                     for name in attribute_names_to_add:
-                        existing_spec.attributes.append(Attribute(
-                            name=name,
-                            type='string',
-                            is_collection=False,
-                            is_key=False
+                        existing_spec.has_attribute.append(Attribute(
+                            attribute_name=[name],
+                            has_attribute_modifier=None
                         ))
                 else:
                     # no existing spec
                     if parent is not None:
                         new_entity = Entity(
-                            url=f'{url_prefix}{active_item_quoted_path}',
-                            name=active_item_path,
-                            type='weak',
-                            attributes=[],
-                            related_entities=[],
-                            key=None
+                            entity_name=[active_item_path[1:]],
+                            has_attribute=[],
+                            has_entity_modifier=[
+                                EntityModifier(entity_modifier='weak')
+                            ] if is_hierarchical_path(active_item_path) else None,
+                            is_object_in_relation=[],
+                            is_subject_in_relation=[]
+
+                            # url=f'{url_prefix}{active_item_quoted_path}',
+                            # name=active_item_path,
+                            # type='weak',
+                            # attributes=[],
+                            # related_entities=[],
+                            # key=None
                         )
-                        parent.related_entities.append(EntityLink(
-                            name=new_entity.name,
-                            relation_name='IsChild',
-                            cardinalities=['1', 'n'],
-                            link=new_entity.url,
-                            is_identifying=True
+                        parent.is_subject_in_relation.append(Relation(
+                            relation_name=['IsChild'],
+                            has_object_entity=new_entity.entity_name[0],
+                            has_subject_entity=f'{active_item_path[1:]}',
+                            object_cardinality=create_cardinality((0, sys.maxsize)),
+                            subject_cardinality=cardinality_factory_single((1, 1)),
+                            has_attribute=[],
+                            has_relation_modifier=[]
                         ))
                     else:
                         # this seems to be the root
                         new_entity = Entity(
-                            url=f'{url_prefix}{active_item_quoted_path}',
-                            name=active_item_path,
-                            type='strong',
-                            attributes=[],
-                            related_entities=[],
-                            key=None
+                            entity_name=[active_item_path[1:]],
+                            has_attribute=[],
+                            has_entity_modifier=[
+                                EntityModifier(entity_modifier='weak')
+                            ] if is_hierarchical_path(active_item_path) else None,
+                            is_object_in_relation=[],
+                            is_subject_in_relation=[]
+
+                            # url=f'{url_prefix}{active_item_quoted_path}',
+                            # name=active_item_path,
+                            # type='strong',
+                            # attributes=[],
+                            # related_entities=[],
+                            # key=None
                         )
                 if new_entity is not None:
                     for key, _ in start.attrib.items():
-                        new_entity.attributes.append(Attribute(
-                            name=key,
-                            type='string',
-                            is_collection=False,
-                            is_key=False
+                        new_entity.has_attribute.append(Attribute(
+                            attribute_name=[key],
+                            has_attribute_modifier=None
                         ))
 
                     entities[parent_path].append(new_entity)
@@ -502,7 +536,7 @@ class XmlDataSourcePlugin(DataSourcePlugin):
         #     raise RuntimeError('It seems the schema has multiple roots')
         # instance_root_schema = schema.root_elements[0]  # type: XsdElement
         instance_root_schema = \
-        [EnhancedXsdElement(x) for x in schema.root_elements if x.prefixed_name == data_root.tag][0]
+            [EnhancedXsdElement(x) for x in schema.root_elements if x.prefixed_name == data_root.tag][0]
 
         if instance_root_schema.occurs != (1, 1):
             raise RuntimeError('The schema root seems to allow something else than exactly one root')
@@ -569,19 +603,18 @@ class XmlDataSourcePlugin(DataSourcePlugin):
             quoted_element_name = urllib.parse.quote(element.prefixed_name, safe='')
             # if entity_prefix == '*' or path == f'{entity_prefix}/{element.prefixed_name}':
             entity = Entity(
-                url=f'http://localhost:7373/schemata/iec61850/entities/{quoted_path}',
-                name=name,
-                type='weak' if '/' in name else 'strong',
-                # TODO fix this such that root is strong as well as all entities we have proper keys for
-                attributes=[],
-                related_entities=[],
-                key=None
+                entity_name=[name],
+                has_attribute=[],
+                has_entity_modifier=None if '/' not in name else [EntityModifier(entity_modifier='weak')],
+                is_object_in_relation=None,
+                is_subject_in_relation=None
             )
             attributes, related_entities = build_attributes_and_related_entities_enhanced(path, element)
-            entity.attributes = attributes
-            entity.related_entities = related_entities
+            entity.has_attribute = attributes
+            entity.is_subject_in_relation = related_entities
+            # prefix, element_name = f'/{path}'.rsplit('/', maxsplit=1)
             prefix, element_name = path.rsplit('/', maxsplit=1)
-            entities[prefix].append(entity)
+            entities[prefix[1:]].append(entity)
 
         return entities
 
@@ -621,8 +654,16 @@ class XmlDataSourcePlugin(DataSourcePlugin):
         entities = self._generate_model(name)
         return [x for inner in entities.values() for x in inner]
 
-    def get_related_entity_links(self, name: str) -> List[EntityLink]:
+    def get_related_entity_links(self, name: str) -> List[Relation]:
         pass
 
     def get_entity_by_id(self, name: str, entity_id: str) -> Entity:
-        pass
+        entities = self._generate_model(name)
+        prefix, _ = split_prefix_and_item_name(entity_id)
+        # prefix, _ = f'/{entity_id}'.rsplit('/', maxsplit=1)
+        # prefix = prefix[1:]
+        subset = entities[prefix]
+        for entity in subset:
+            if entity_id in entity.entity_name:
+                return entity
+        raise KeyError('Entity ID cannot be resolved')
