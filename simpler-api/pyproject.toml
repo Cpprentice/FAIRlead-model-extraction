@@ -50,7 +50,7 @@ dependencies = [
   "fastapi[all]",
   "pydot",
   "uvicorn",
-  "simpler_core==0.1.0"
+  "simpler-core==0.1.0"
 ]
 
 [project.urls]
