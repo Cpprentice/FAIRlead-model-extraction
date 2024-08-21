@@ -39,3 +39,5 @@ src/simpler_model/security_api.py
 setup.cfg
 src/simpler_model/apis/*
 src/simpler_model/models/extra_models.py
+pyproject.toml
+README.md
