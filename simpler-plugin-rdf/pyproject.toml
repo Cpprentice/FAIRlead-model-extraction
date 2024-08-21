@@ -110,7 +110,8 @@ classifiers = [
 # https://packaging.python.org/discussions/install-requires-vs-requirements/
 dependencies = [
   "rdflib~=7.0.0",
-#   "owlready2~=0.46"
+#   "owlready2~=0.46",
+  "simpler-core==0.1.0"
 ]
 
 # List additional groups of dependencies here (e.g. development

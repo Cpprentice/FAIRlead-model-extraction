@@ -110,7 +110,8 @@ classifiers = [
 # https://packaging.python.org/discussions/install-requires-vs-requirements/
 dependencies = [
   'xmlschema~=3.1.0',
-  'lxml~=5.2.1'
+  'lxml~=5.2.1',
+  "simpler-core==0.1.0"
 ]
 
 # List additional groups of dependencies here (e.g. development
