@@ -3,3 +3,9 @@
 build/
 *.egg-info/
 __pycache__/
+*.whl
+.profile
+.coverage
+storage/
+.archive/
+spec/0/openapi3_1_merged.yaml
