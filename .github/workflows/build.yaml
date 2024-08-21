@@ -17,7 +17,7 @@ jobs:
       # with:
       #   fetch-tags: true
     - name: Workaround to have tags available
-      run: git fetch --tags
+      run: git fetch -f --tags
 
     - name: Set up Python
       uses: actions/setup-python@v5
