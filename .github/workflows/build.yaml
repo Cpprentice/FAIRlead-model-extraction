@@ -27,15 +27,15 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install setuptools wheel twine
-
-    - name: Build core package
-      if: startsWith(github.ref, 'refs/tags/core-')
-      run: pip wheel --no-deps -w wheels simpler-core/.
+        pip install build twine
 
     - name: Build model package
       if: startsWith(github.ref, 'refs/tags/model-')
       run: pip wheel --no-deps -w wheels simpler-model/.
+
+    - name: Build core package
+      if: startsWith(github.ref, 'refs/tags/core-')
+      run: pip wheel --no-deps -w wheels simpler-core/.
 
     - name: Check git describe for cli
       if: startsWith(github.ref, 'refs/tags/cli-')
@@ -64,14 +64,15 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/plugin-xml-')
       run: pip wheel --no-deps -w wheels simpler-plugin-xml/.
 
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: wheels
-        path: wheels/
+    # - name: Upload build artifacts
+    #   uses: actions/upload-artifact@v4
+    #   with:
+    #     name: wheels
+    #     path: wheels/
 
-#    - name: Publish package
-#      env:
-#        TWINE_USERNAME: __token__
-#        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-#      run: twine upload dist/*
+    - name: Publish package
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+      run: twine upload dist/*
+      

@@ -9,3 +9,4 @@ __pycache__/
 storage/
 .archive/
 spec/0/openapi3_1_merged.yaml
+dist/
