@@ -12,8 +12,12 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      with:
-        fetch-tags: true
+      # it seems fetch-tags is bugged (generally or just with on/push/tags)
+      # https://github.com/actions/checkout/issues/1467
+      # with:
+      #   fetch-tags: true
+    - name: Workaround to have tags available
+      run: git fetch --tags
 
     - name: Set up Python
       uses: actions/setup-python@v5
