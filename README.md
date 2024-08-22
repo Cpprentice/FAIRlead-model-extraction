@@ -19,13 +19,12 @@ This repository shall contain the service that is used to extract a conceptual m
 Moreover, a visualization via the [Graphviz software](https://graphviz.org/) shall be available.
 
 
-It contains many subfolders for different Python modules.
+It contains many subfolders for different Python packages.
 
 - simpler-api
 - simpler-cli
 - simpler-core
 - simpler-model
-- simpler-model-3_1
 - simpler-plugin-rdf
 - simpler-plugin-sql
 - simpler-plugin-tabular
