@@ -35,7 +35,7 @@ jobs:
 
     - name: Build core package
       if: startsWith(github.ref, 'refs/tags/core-')
-      run: pip wheel --no-deps -w wheels simpler-core/.
+      run: python -m build simpler-core/.
 
     - name: Check git describe for cli
       if: startsWith(github.ref, 'refs/tags/cli-')
