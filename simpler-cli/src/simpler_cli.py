@@ -6,7 +6,7 @@ from argparse import ArgumentParser, ArgumentError, Namespace
 from pathlib import Path
 from typing import List, Callable
 
-from simpler_core.dot import create_graph
+from simpler_core.dot import create_graph, filter_graph
 from simpler_core.plugin import DataSourcePlugin, DataSourceCursor, DataSourceType
 from simpler_core.schema import serialize_entity_list_to_yaml, load_external_schema_from_yaml, extend_schema_from_yaml, \
     apply_schema_correction_if_available
@@ -24,6 +24,10 @@ def get_arg_parser(plugins: List[DataSourceType]) -> ArgumentParser:
                      help='Specify the input file paths and the input name of the plugin like "input_name:path"')
     ecp.add_argument('-f', '--format', choices=['RDF', 'DOT', 'JSON', 'YAML'], default='JSON')
     ecp.add_argument('-o', '--output', help='Write to target file instead of STDOUT')
+    ecp.add_argument('--select-entity', action='append',
+                     help='Specify a list of entities the diagram shall show up plus up to "distance" neighbors')
+    ecp.add_argument('--distance', metavar='<int>', type=int, default=2,
+                     help='Rendering distance for DOT only used with --select-entity')
 
     schema_merge_command_parser = smcp = sub_commands.add_parser('schema')
     smcp.add_argument('base_schema_file', metavar='<base-schema-file>', help='A full spec file')
@@ -31,7 +35,10 @@ def get_arg_parser(plugins: List[DataSourceType]) -> ArgumentParser:
 
     dot_command_parser = dcp = sub_commands.add_parser('dot')
     dcp.add_argument('schema_file', metavar='<schema-file>', help='the schema file to generate dot for')
-
+    dcp.add_argument('--select-entity', action='append',
+                     help='Specify a list of entities the diagram shall show up plus up to "distance" neighbors')
+    dcp.add_argument('--distance', metavar='<int>', type=int, default=2,
+                     help='Rendering distance for DOT only used with --select-entity')
     return parser
 
 
@@ -103,7 +110,9 @@ def extract_command(args: Namespace, parser: ArgumentParser):
     output_string = ''
 
     if args.format == 'DOT':
-        dot = create_graph(entities, show_attributes=False)
+        dot = create_graph(entities, show_attributes=True)
+        if args.select_entity:
+            dot = filter_graph(dot, args.select_entity, args.distance)
         output_string = str(dot)
     elif args.format == 'JSON':
         dicts = [m.dict() for m in entities]
@@ -123,6 +132,8 @@ def dot_command(args: Namespace, parser: ArgumentParser):
     with open(args.schema_file, 'rb') as base_stream:
         list_of_base_entities = load_external_schema_from_yaml(base_stream)
     graph = create_graph(list_of_base_entities)
+    if args.select_entity:
+        graph = filter_graph(graph, args.select_entity, args.distance)
     print(str(graph))
 
 
