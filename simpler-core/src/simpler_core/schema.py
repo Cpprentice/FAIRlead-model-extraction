@@ -2,7 +2,7 @@ import collections
 import json
 from contextlib import suppress
 from types import NoneType
-from typing import BinaryIO, List, TextIO, Tuple, Sequence, get_origin, get_args, Any, Dict
+from typing import BinaryIO, List, TextIO, Tuple, Sequence, get_origin, get_args, Any, Dict, Annotated, Union
 
 import yaml
 from pydantic import BaseModel, BaseConfig, PydanticUndefinedAnnotation, create_model
@@ -12,7 +12,8 @@ from pydantic_partial import create_partial_model
 from pydantic_partial._compat import PydanticCompat
 
 from simpler_core.storage import DataSourceStorage
-from simpler_model import Entity
+from simpler_model import Entity, Attribute
+
 try:
     from simpler_model import Relation
     EntityLink = Relation
@@ -50,7 +51,8 @@ def load_external_schema_from_json(text_stream: TextIO) -> List[Entity]:
 
 optional_field_exceptions = {
     'PartialEntity': ['entity_name'],
-    'PartialRelation': ['relation_name']
+    'PartialRelation': ['relation_name'],
+    'PartialAttribute': ['attribute_name']
 }
 
 
@@ -66,6 +68,10 @@ class OptionalModel(BaseModel):
                     or field_name not in optional_field_exceptions[cls.__name__]:
                 field.annotation = field.annotation | None  # <- for valid JsonSchema
                 field.default = None
+            else:
+                # we want to allow None as a value in the List of names to handle deletions
+                strict_modifier = field.annotation.__args__[0].__metadata__[0]
+                field.annotation.__args__ = (Annotated[Union[str, None], strict_modifier],)
 
         with suppress(PydanticUndefinedAnnotation):
             cls.model_rebuild(force=True)
@@ -83,13 +89,14 @@ class PartialEntity(Entity, OptionalModel):
 #     pass
 
 PartialRelation = make_optional(Relation)
-
+PartialAttribute = make_optional(Attribute)
 
 # PartialEntity = create_partial_model(Entity, recursive=True)
 # PartialRelation = create_partial_model(Relation, recursive=True)
 
 replacements = {
-    Relation: PartialRelation
+    Relation: PartialRelation,
+    Attribute: PartialAttribute
 }
 
 
@@ -267,12 +274,18 @@ def merge_schema_lists(base_list: List, update_list: List) -> List:
         if len(items) == 1:
             result_list.append(items[0])
             continue
+        deletion = False
         while len(items) > 1:
             base = items[0]
             update = items[1]
             result = merge_schema_dicts(base, update)
-            items = [result, *items[2:]]
-        result_list.append(items[0])
+            if result[name_key][0] is None:
+                deletion = True
+                items = []
+            else:
+                items = [result, *items[2:]]
+        if not deletion:
+            result_list.append(items[0])
     return result_list
 
 
