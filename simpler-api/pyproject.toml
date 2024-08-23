@@ -48,9 +48,8 @@ dependencies = [
   "typing-extensions~=4.8.0",
   "pydantic~=2.6.4",
   "fastapi[all]",
-  "pydot",
   "uvicorn",
-  "simpler-core==0.1.0"
+  "simpler-core==0.2.0"
 ]
 
 [project.urls]

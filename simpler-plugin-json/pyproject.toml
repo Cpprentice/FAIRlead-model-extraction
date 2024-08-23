@@ -26,7 +26,7 @@ build-backend = "setuptools.build_meta"  # If not defined, then legacy behavior 
 # There are some restrictions on what makes a valid project name
 # specification here:
 # https://packaging.python.org/specifications/core-metadata/#name
-name = "simpler-plugin-xml"  # REQUIRED, is the only field that cannot be marked as dynamic.
+name = "simpler-plugin-json"  # REQUIRED, is the only field that cannot be marked as dynamic.
 
 # Versions should comply with PEP 440:
 # https://www.python.org/dev/peps/pep-0440/
@@ -39,7 +39,7 @@ dynamic = ["version"]
 # This is a one-line description or tagline of what your project does. This
 # corresponds to the "Summary" metadata field:
 # https://packaging.python.org/specifications/core-metadata/#summary
-description = "Plugin to extract ER models XML and XML schema"
+description = "Plugin to handle any kind of JSON and JSON schema data"
 
 # This is an optional longer description of your project that represents
 # the body of text which users will see when they visit PyPI.
@@ -68,7 +68,7 @@ requires-python = ">=3.12"
 # Note that this is a list of additional keywords, separated
 # by commas, to be used to assist searching for the distribution in a
 # larger catalog.
-keywords = ["entity-relationship-model", "ER", "extraction", "model", "xml", "simpler"]
+keywords = ["entity-relationship-model", "ER", "extraction", "model", "json", "simpler"]
 
 authors = [
   {name = "Philipp Schmurr", email = "philipp.schmurr@kit.edu" }
@@ -109,9 +109,9 @@ classifiers = [
 # For an analysis of this field vs pip's requirements files see:
 # https://packaging.python.org/discussions/install-requires-vs-requirements/
 dependencies = [
-  'xmlschema~=3.1.0',
-  'lxml~=5.2.1',
-  "simpler-core==0.2.0"
+  "simpler-core==0.2.0",
+#  "genson~=1.3.0",
+  "datamodel-code-generator~=0.25.9"
 ]
 
 # List additional groups of dependencies here (e.g. development
@@ -123,7 +123,7 @@ dependencies = [
 # Optional dependencies the project provides. These are commonly
 # referred to as "extras". For a more extensive definition see:
 # https://packaging.python.org/en/latest/specifications/dependency-specifiers/#extras
-# [project.optional-dependencies]
+[project.optional-dependencies]
 # dev = ["check-manifest"]
 # test = ["coverage"]
 
@@ -157,4 +157,4 @@ dependencies = [
 
 [tool.setuptools_scm]
 root = ".."
-git_describe_command = "git describe --long --match plugin-xml-*"
+git_describe_command = "git describe --long --match plugin-json-*"

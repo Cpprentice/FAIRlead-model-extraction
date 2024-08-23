@@ -33,3 +33,6 @@
 requirements.txt
 setup.cfg
 pyproject.toml
+README.md
+Dockerfile
+docker-compose.yaml
