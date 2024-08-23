@@ -39,7 +39,7 @@ dynamic = ["version"]
 # This is a one-line description or tagline of what your project does. This
 # corresponds to the "Summary" metadata field:
 # https://packaging.python.org/specifications/core-metadata/#summary
-description = "Core library functions for adding new simpler conversion modules"
+description = "Plugin to extract ER models from SQL databases"
 
 # This is an optional longer description of your project that represents
 # the body of text which users will see when they visit PyPI.
@@ -110,7 +110,7 @@ classifiers = [
 # https://packaging.python.org/discussions/install-requires-vs-requirements/
 dependencies = [
   "sqlalchemy~=2.0.29",
-  "simpler-core==0.1.0"
+  "simpler-core==0.2.0"
 ]
 
 # List additional groups of dependencies here (e.g. development
@@ -135,7 +135,7 @@ all = [
   "simpler-plugin-sql[mysql]",
   "simpler-plugin-sql[oracle]"
 ]
-# TODO investigate the best behavior to have combined extras (e.g. ALL)
+
 
 # List URLs that are relevant to your project
 #

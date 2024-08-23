@@ -116,8 +116,7 @@ classifiers = [
 # For an analysis of this field vs pip's requirements files see:
 # https://packaging.python.org/discussions/install-requires-vs-requirements/
 dependencies = [
-#  "owlready2~=0.46",
-  "simpler-core==0.1.0"
+  "simpler-core==0.2.0"
 ]
 
 # List additional groups of dependencies here (e.g. development

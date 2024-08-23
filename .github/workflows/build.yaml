@@ -37,38 +37,33 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/core-')
       run: python -m build simpler-core/.
 
-    - name: Check git describe for cli
-      if: startsWith(github.ref, 'refs/tags/cli-')
-      run: git describe --long --match cli-*
     - name: Build cli package
       if: startsWith(github.ref, 'refs/tags/cli-')
-      run: pip wheel --no-deps -w wheels simpler-cli/.
+      run: python -m build simpler-cli/.
 
     - name: Build api package
       if: startsWith(github.ref, 'refs/tags/api-')
-      run: pip wheel --no-deps -w wheels simpler-core/.
+      run: python -m build simpler-core/.
+
+    - name: Build plugin-json package
+      if: startsWith(github.ref, 'refs/tags/plugin-json-')
+      run: python -m build simpler-plugin-json/.
 
     - name: Build plugin-rdf package
       if: startsWith(github.ref, 'refs/tags/plugin-rdf-')
-      run: pip wheel --no-deps -w wheels simpler-plugin-rdf/.
+      run: python -m build simpler-plugin-rdf/.
       
     - name: Build plugin-sql package
       if: startsWith(github.ref, 'refs/tags/plugin-sql-')
-      run: pip wheel --no-deps -w wheels simpler-plugin-sql/.
+      run: python -m build simpler-plugin-sql/.
     
     - name: Build plugin-tabular package
       if: startsWith(github.ref, 'refs/tags/plugin-tabular-')
-      run: pip wheel --no-deps -w wheels simpler-plugin-tabular/.
+      run: python -m build simpler-plugin-tabular/.
 
     - name: Build plugin-xml package
       if: startsWith(github.ref, 'refs/tags/plugin-xml-')
-      run: pip wheel --no-deps -w wheels simpler-plugin-xml/.
-
-    # - name: Upload build artifacts
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #     name: wheels
-    #     path: wheels/
+      run: python -m build simpler-plugin-xml/.
 
     - name: Publish package
       env:
