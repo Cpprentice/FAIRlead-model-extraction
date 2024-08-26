@@ -28,14 +28,20 @@ jobs:
             tags+="$line "
           fi
         done < <(git tag -l | sed -E 's/[0-9]+\.[0-9]+\.[0-9]+/*/g' | sort | uniq)
-        echo "::set-output name=TAGS::$tags"
+        echo "TAGS=$tags" >> $GITHUB_ENV
 
     - name: Check if TAGS is empty
       run: |
-        if [ -z "${{ steps.collect_tags.outputs.TAGS }}" ]; then
+        if [ -z "${{ env.TAGS }}" ]; then
           echo "No tags on current main branch commit found. Stopping workflow."
           exit 1
         fi
+
+    - name: Tags to be processed now
+      run: echo "Tags handled now: ${{ env.TAGS }}"
+
+    - name: Cleanup dist directories
+      run: rm -rf */dist/
 
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -48,47 +54,47 @@ jobs:
         pip install build twine
 
     - name: Build model package
-      if: contains(steps.collect_tags.outputs.TAGS, 'model-*')
+      if: contains(env.TAGS, 'model-*')
       # if: startsWith(github.ref, 'refs/tags/model-')
       run: python -m build simpler-model/.
 
     - name: Build core package
-      if: contains(steps.collect_tags.outputs.TAGS, 'core-*')
+      if: contains(env.TAGS, 'core-*')
       # if: startsWith(github.ref, 'refs/tags/core-')
       run: python -m build simpler-core/.
 
     - name: Build cli package
-      if: contains(steps.collect_tags.outputs.TAGS, 'cli-*')
+      if: contains(env.TAGS, 'cli-*')
       # if: startsWith(github.ref, 'refs/tags/cli-')
       run: python -m build simpler-cli/.
 
     - name: Build api package
-      if: contains(steps.collect_tags.outputs.TAGS, 'api-*')
+      if: contains(env.TAGS, 'api-*')
       # if: startsWith(github.ref, 'refs/tags/api-')
       run: python -m build simpler-core/.
 
     - name: Build plugin-json package
-      if: contains(steps.collect_tags.outputs.TAGS, 'plugin-json-*')
+      if: contains(env.TAGS, 'plugin-json-*')
       # if: startsWith(github.ref, 'refs/tags/plugin-json-')
       run: python -m build simpler-plugin-json/.
 
     - name: Build plugin-rdf package
-      if: contains(steps.collect_tags.outputs.TAGS, 'plugin-rdf-*')
+      if: contains(env.TAGS, 'plugin-rdf-*')
       # if: startsWith(github.ref, 'refs/tags/plugin-rdf-')
       run: python -m build simpler-plugin-rdf/.
       
     - name: Build plugin-sql package
-      if: contains(steps.collect_tags.outputs.TAGS, 'plugin-sql-*')
+      if: contains(env.TAGS, 'plugin-sql-*')
       # if: startsWith(github.ref, 'refs/tags/plugin-sql-')
       run: python -m build simpler-plugin-sql/.
     
     - name: Build plugin-tabular package
-      if: contains(steps.collect_tags.outputs.TAGS, 'plugin-tabular-*')
+      if: contains(env.TAGS, 'plugin-tabular-*')
       # if: startsWith(github.ref, 'refs/tags/plugin-tabular-')
       run: python -m build simpler-plugin-tabular/.
 
     - name: Build plugin-xml package
-      if: contains(steps.collect_tags.outputs.TAGS, 'plugin-xml-*')
+      if: contains(env.TAGS, 'plugin-xml-*')
       # if: startsWith(github.ref, 'refs/tags/plugin-xml-')
       run: python -m build simpler-plugin-xml/.
 
