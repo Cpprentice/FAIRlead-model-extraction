@@ -38,7 +38,8 @@ jobs:
         fi
 
     - name: Tags to be processed now
-      run: echo "Tags handled now: ${{ env.TAGS }}"
+      run: >-
+        echo "Tags handled now: ${{ env.TAGS }}"
 
     - name: Cleanup dist directories
       run: rm -rf */dist/
