@@ -2,8 +2,8 @@ name: Build Python Packages
 
 on:
   push:
-    tags:
-      - '*'
+    branches:
+      - main
 
 jobs:
   build:
@@ -19,6 +19,31 @@ jobs:
     - name: Workaround to have tags available
       run: git fetch -f --tags
 
+    - name: Collect relevant tags
+      id: collect_tags
+      run: |
+        tags=""
+        while read -r line; do
+          if git describe --exact-match --match "$line" >/dev/null 2>&1; then
+            tags+="$line "
+          fi
+        done < <(git tag -l | sed -E 's/[0-9]+\.[0-9]+\.[0-9]+/*/g' | sort | uniq)
+        echo "TAGS=$tags" >> $GITHUB_ENV
+
+    - name: Check if TAGS is empty
+      run: |
+        if [ -z "${{ env.TAGS }}" ]; then
+          echo "No tags on current main branch commit found. Stopping workflow."
+          exit 1
+        fi
+
+    - name: Tags to be processed now
+      run: >-
+        echo "Tags handled now: ${{ env.TAGS }}"
+
+    - name: Cleanup dist directories
+      run: rm -rf */dist/
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
@@ -30,39 +55,48 @@ jobs:
         pip install build twine
 
     - name: Build model package
-      if: startsWith(github.ref, 'refs/tags/model-')
+      if: contains(env.TAGS, 'model-*')
+      # if: startsWith(github.ref, 'refs/tags/model-')
       run: python -m build simpler-model/.
 
     - name: Build core package
-      if: startsWith(github.ref, 'refs/tags/core-')
+      if: contains(env.TAGS, 'core-*')
+      # if: startsWith(github.ref, 'refs/tags/core-')
       run: python -m build simpler-core/.
 
     - name: Build cli package
-      if: startsWith(github.ref, 'refs/tags/cli-')
+      if: contains(env.TAGS, 'cli-*')
+      # if: startsWith(github.ref, 'refs/tags/cli-')
       run: python -m build simpler-cli/.
 
     - name: Build api package
-      if: startsWith(github.ref, 'refs/tags/api-')
-      run: python -m build simpler-core/.
+      if: contains(env.TAGS, 'api-*')
+      # if: startsWith(github.ref, 'refs/tags/api-')
+      run: python -m build simpler-api/.
 
     - name: Build plugin-json package
-      if: startsWith(github.ref, 'refs/tags/plugin-json-')
+      if: contains(env.TAGS, 'plugin-json-*')
+      # if: startsWith(github.ref, 'refs/tags/plugin-json-')
       run: python -m build simpler-plugin-json/.
 
     - name: Build plugin-rdf package
-      if: startsWith(github.ref, 'refs/tags/plugin-rdf-')
+      if: contains(env.TAGS, 'plugin-rdf-*')
+      # if: startsWith(github.ref, 'refs/tags/plugin-rdf-')
       run: python -m build simpler-plugin-rdf/.
       
     - name: Build plugin-sql package
-      if: startsWith(github.ref, 'refs/tags/plugin-sql-')
+      if: contains(env.TAGS, 'plugin-sql-*')
+      # if: startsWith(github.ref, 'refs/tags/plugin-sql-')
       run: python -m build simpler-plugin-sql/.
     
     - name: Build plugin-tabular package
-      if: startsWith(github.ref, 'refs/tags/plugin-tabular-')
+      if: contains(env.TAGS, 'plugin-tabular-*')
+      # if: startsWith(github.ref, 'refs/tags/plugin-tabular-')
       run: python -m build simpler-plugin-tabular/.
 
     - name: Build plugin-xml package
-      if: startsWith(github.ref, 'refs/tags/plugin-xml-')
+      if: contains(env.TAGS, 'plugin-xml-*')
+      # if: startsWith(github.ref, 'refs/tags/plugin-xml-')
       run: python -m build simpler-plugin-xml/.
 
     - name: Publish package
