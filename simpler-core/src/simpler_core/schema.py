@@ -289,6 +289,27 @@ def merge_schema_lists(base_list: List, update_list: List) -> List:
     return result_list
 
 
+def introduce_inverse_relations(entities: List[Entity]):
+    entity_lookup = {
+        entity.entity_name[0]: entity
+        for entity in entities
+    }
+    for entity in entities:
+        for relation in entity.is_subject_in_relation:
+            # TODO check if relation already has an inverse
+            target_entity = entity_lookup[relation.has_object_entity]
+            inverse_relation = Relation(
+                has_object_entity=entity.entity_name[0],
+                has_subject_entity=target_entity.entity_name[0],
+                object_cardinality=relation.subject_cardinality,
+                subject_cardinality=relation.object_cardinality,
+                relation_name=[f'-{relation.relation_name[0]}'],
+                has_attribute=relation.has_attribute,
+                has_relation_modifier=[]
+            )
+            target_entity.is_object_in_relation.append(inverse_relation)
+
+
 def merge_schema_dicts(base_dict: Dict, update_dict: Dict) -> Dict:
     result = {}
     for key, original_value in base_dict.items():

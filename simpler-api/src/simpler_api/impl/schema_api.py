@@ -9,6 +9,7 @@ from simpler_api.apis.schema_api_base import BaseSchemaApi
 from simpler_api.impl.storage import get_storage
 from simpler_api.models.model_schema import ModelSchema
 from simpler_core.dot import create_graph
+from simpler_core.schema import apply_schema_correction_if_available, introduce_inverse_relations
 
 
 class SchemaApi(BaseSchemaApi):
@@ -20,7 +21,8 @@ class SchemaApi(BaseSchemaApi):
         storage = get_storage()
         return [
             ModelSchema(
-                id=data_name
+                id=data_name,
+                implementation=storage.get_plugin_name(data_name)
             )
             for data_name in storage.list_available_data()
         ]
@@ -45,9 +47,16 @@ class SchemaApi(BaseSchemaApi):
         schemaId: str,
         show_attributes: bool,
     ) -> str:
+        try:
+            # we should be able to directly get a cursor here based on the schema Id - if not we issue a 404
+            cursor = get_cursor(request, schemaId)
+        except:
+            raise HTTPException(status_code=404, detail="Schema not found")
 
-        cursor = get_cursor(request, schemaId)
         entities = cursor.get_all_entities()
+
+        entities = apply_schema_correction_if_available(entities, get_storage(), schemaId)
+        introduce_inverse_relations(entities)
 
         graph = create_graph(entities, show_attributes)
 
