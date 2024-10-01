@@ -16,7 +16,7 @@ templateDir: /local/custom-openapi-template/python-fastapi-external-model
 # modelPackage: simpler_model  # this is concated with the packageName inside the generator java code and therefore useless for our purpose
 # customModelPackge: simpler_model  # this does not work - but putting it into additionalProperties works
 
-inputSpec: /local/spec/0/openapi.yaml
+inputSpec: /local/spec/0/openapi3_1_merged.yaml
 additionalProperties:
   allowUnicodeIdentifiers: false
   disallowAdditionalPropertiesIfNotPresent: false  # custom
