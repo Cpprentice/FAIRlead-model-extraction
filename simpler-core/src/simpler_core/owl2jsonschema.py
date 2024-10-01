@@ -18,6 +18,7 @@ class ConversionSettings:
     exclude_non_base_iri_concepts: bool = True
     link_uri_pattern: str = ''
     force_link_on: Set[ThingClass] = field(default_factory=set)
+    force_link_on_object_prop: Set[ObjectPropertyClass] = field(default_factory=set)
     exclude_concept: Set[ThingClass | DataPropertyClass | ObjectPropertyClass] = field(default_factory=set)
 
 
@@ -155,6 +156,9 @@ def handle_prop_content(
     except ValueError:
         can_combine = False
 
+    if prop in opt.force_link_on_object_prop:
+        relevant_range_classes = [str]
+
     if can_combine:
         # this means we have one array for all subtypes
         object_schema['properties'][prop.name] = build_one_of_array(
@@ -195,7 +199,7 @@ def build_one_of_array(
             items.append({'type': json_schema_type_factory(class_)})
     if cardinality == (0, 1) or cardinality == (1, 1):
         if cardinality == (0, 1):
-            items += {'type': 'null'}
+            items.append({'type': 'null'})
 
         if len(items) == 1:
             return items[0]
@@ -252,13 +256,16 @@ def main():
     with (open(owl_file_path, 'r') as stream):
         with make_n_triples_stream(stream) as n_triples_stream:
             stream_path_url = Path(n_triples_stream.name).as_uri().replace('///', '//')
-            classes, object_properties, data_properties, world, ontology = \
-                extract_ontology_concepts(n_triples_stream, stream_path_url)
+            classes, object_properties, data_properties, world, ontologies = \
+                extract_ontology_concepts([(n_triples_stream, stream_path_url)])
+
+    ontology = ontologies[0]
 
     opt = ConversionSettings(
         ontology=ontology,
         link_uri_pattern='http://localhost:7373/schemata/[^/]+/entities/[^/]+',
         force_link_on={ontology['Entity']},
+        force_link_on_object_prop={ontology['inverseRelation']},
         exclude_concept={ontology['isAttributeOf']}
     )
 

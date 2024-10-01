@@ -296,18 +296,30 @@ def introduce_inverse_relations(entities: List[Entity]):
     }
     for entity in entities:
         for relation in entity.is_subject_in_relation:
-            # TODO check if relation already has an inverse
-            target_entity = entity_lookup[relation.has_object_entity]
-            inverse_relation = Relation(
-                has_object_entity=entity.entity_name[0],
-                has_subject_entity=target_entity.entity_name[0],
-                object_cardinality=relation.subject_cardinality,
-                subject_cardinality=relation.object_cardinality,
-                relation_name=[f'-{relation.relation_name[0]}'],
-                has_attribute=relation.has_attribute,
-                has_relation_modifier=[]
-            )
-            target_entity.is_object_in_relation.append(inverse_relation)
+            if relation.inverse_relation is None:
+                try:
+                    target_entity = entity_lookup[relation.has_object_entity]
+                except KeyError:
+                    # TODO make sure this produces a model error or warning
+                    continue
+                inverse_relation = Relation(
+                    has_object_entity=entity.entity_name[0],
+                    has_subject_entity=target_entity.entity_name[0],
+                    object_cardinality=relation.subject_cardinality,
+                    subject_cardinality=relation.object_cardinality,
+                    relation_name=[f'-{relation.relation_name[0]}'],
+                    has_attribute=relation.has_attribute,
+                    has_relation_modifier=[],
+                    inverse_relation=relation.relation_name[0]
+                )
+                relation.inverse_relation=inverse_relation.relation_name[0]
+                if target_entity.is_object_in_relation is None:
+                    target_entity.is_object_in_relation = []
+                target_entity.is_object_in_relation.append(relation)
+                target_entity.is_subject_in_relation.append(inverse_relation)
+                if entity.is_object_in_relation is None:
+                    entity.is_object_in_relation = []
+                entity.is_object_in_relation.append(inverse_relation)
 
 
 def merge_schema_dicts(base_dict: Dict, update_dict: Dict) -> Dict:
@@ -352,3 +364,7 @@ def is_hierarchical_path(path: str) -> bool:
     if path.startswith(path_separator):
         return path_separator in path[1:]
     return path_separator in path
+
+
+def convert_path_separator(path: str, new_separator: str) -> str:
+    return path.replace(path_separator, new_separator)
