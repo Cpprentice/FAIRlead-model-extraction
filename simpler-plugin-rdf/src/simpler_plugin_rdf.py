@@ -346,10 +346,12 @@ class OwlDataSourcePlugin(DataSourcePlugin):
                         combined_cardinality = functools.reduce(merge_cardinalities, all_cardinalities,
                                                                 all_cardinalities[0])
 
+                        inverse_relation = None
                         if object_prop.inverse_property is not None:
                             inverse_restrictions = get_cardinality_restrictions(
                                 target_class, object_prop.inverse_property, class_)
                             inverse_cardinality = build_cardinality(inverse_restrictions)
+                            inverse_relation = object_prop.inverse_property.name
                         else:
                             inverse_cardinality = build_cardinality([])
 
@@ -361,7 +363,8 @@ class OwlDataSourcePlugin(DataSourcePlugin):
                             subject_cardinality=create_cardinality(inverse_cardinality),
                             has_attribute=[],
                             has_relation_modifier=[RelationModifier(relation_modifier='identifying')] \
-                                if inverse_cardinality[0] > 0 else None
+                                if inverse_cardinality[0] > 0 else None,
+                            inverse_relation=inverse_relation
                         )
                         if relation.has_relation_modifier is not None:
                             make_weak = True
