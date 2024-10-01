@@ -8,7 +8,7 @@ info:
     name: MIT
   termsOfService: http://swagger.io/terms/
   title: Schema API - OpenAPI 3.1
-  version: 0.2.0
+  version: 0.3.0
 externalDocs:
   description: Find out more about Swagger
   url: http://swagger.io
@@ -50,8 +50,6 @@ paths:
     get:
       description: desc
       operationId: getAllSchemas
-      parameters:
-      - $ref: '#/components/parameters/EntityPrefix'
       responses:
         "200":
           content:
@@ -84,7 +82,6 @@ paths:
         schema:
           type: string
         style: simple
-      - $ref: '#/components/parameters/EntityPrefix'
       responses:
         "200":
           content:
@@ -114,6 +111,36 @@ paths:
         explode: true
         in: query
         name: showAttributes
+        required: false
+        schema:
+          default: true
+          type: boolean
+        style: form
+      - description: Specify a list of highlighted entities
+        explode: true
+        in: query
+        name: selectedEntities
+        required: false
+        schema:
+          default: []
+          items:
+            type: string
+          type: array
+        style: form
+      - description: The distance to render when using highlighted entities
+        explode: true
+        in: query
+        name: renderDistance
+        required: false
+        schema:
+          default: 2
+          type: integer
+        style: form
+      - description: Toggles whether to generate inverse relations for each existing
+          relation that has no schema based inverse
+        explode: true
+        in: query
+        name: generateInverseRelations
         required: false
         schema:
           default: true
@@ -295,10 +322,10 @@ components:
       title: RelationModifier
     Cardinality:
       enum:
-      - Cardinality: exactlyOne
       - Cardinality: oneOrNone
-      - Cardinality: any
       - Cardinality: oneOrMore
+      - Cardinality: any
+      - Cardinality: exactlyOne
       properties:
         cardinality:
           type: string
@@ -323,6 +350,10 @@ components:
           type: array
         hasSubjectEntity:
           title: hasSubjectEntity
+        inverseRelation:
+          nullable: true
+          title: inverseRelation
+          type: string
         objectCardinality:
           $ref: '#/components/schemas/Cardinality'
         subjectCardinality:
@@ -367,6 +398,9 @@ components:
             type: string
           minItems: 1
           type: array
+        entityUrl:
+          nullable: true
+          type: string
       required:
       - entityName
       title: Entity
