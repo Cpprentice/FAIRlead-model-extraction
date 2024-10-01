@@ -15,7 +15,6 @@ class BaseSchemaApi:
     def get_all_schemas(
         self,
         request: Request,
-        entity_prefix: str,
     ) -> List[ModelSchema]:
         """desc"""
         ...
@@ -25,7 +24,6 @@ class BaseSchemaApi:
         self,
         request: Request,
         schemaId: str,
-        entity_prefix: str,
     ) -> ModelSchema:
         """desc"""
         ...
@@ -36,6 +34,9 @@ class BaseSchemaApi:
         request: Request,
         schemaId: str,
         show_attributes: bool,
+        selected_entities: List[str],
+        render_distance: int,
+        generate_inverse_relations: bool,
     ) -> str:
         """desc"""
         ...

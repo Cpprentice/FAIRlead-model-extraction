@@ -14,4 +14,4 @@
 
 
 
-from simpler_model.models.format import Format
+from simpler_model.models.entity_modifier import EntityModifier

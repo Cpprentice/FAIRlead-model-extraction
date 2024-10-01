@@ -44,10 +44,9 @@ for _, name, _ in pkgutil.iter_modules(ns_pkg.__path__, ns_pkg.__name__ + "."):
 )
 async def get_all_schemas(
     request: Request,
-    entity_prefix: str = Query('', description="", alias="EntityPrefix"),
 ) -> List[ModelSchema]:
     """desc"""
-    return BaseSchemaApi.subclasses[0]().get_all_schemas(request, entity_prefix)
+    return BaseSchemaApi.subclasses[0]().get_all_schemas(request, )
 
 
 @router.get(
@@ -63,10 +62,9 @@ async def get_all_schemas(
 async def get_schema_by_id(
     request: Request,
     schemaId: str = Path(..., description="ID of schema to return"),
-    entity_prefix: str = Query('', description="", alias="EntityPrefix"),
 ) -> ModelSchema:
     """desc"""
-    return BaseSchemaApi.subclasses[0]().get_schema_by_id(request, schemaId, entity_prefix)
+    return BaseSchemaApi.subclasses[0]().get_schema_by_id(request, schemaId)
 
 
 @router.get(
@@ -83,6 +81,9 @@ async def get_schema_diagram(
     request: Request,
     schemaId: str = Path(..., description="ID of schema to return"),
     show_attributes: bool = Query(True, description="Toggle the rendering state of attributes", alias="showAttributes"),
+    selected_entities: List[str] = Query([], description="Specify a list of highlighted entities", alias="selectedEntities"),
+    render_distance: int = Query(2, description="The distance to render when using highlighted entities", alias="renderDistance"),
+    generate_inverse_relations: bool = Query(True, description="Toggles whether to generate inverse relations for each existing relation that has no schema based inverse", alias="generateInverseRelations"),
 ) -> str:
     """desc"""
-    return BaseSchemaApi.subclasses[0]().get_schema_diagram(request, schemaId, show_attributes)
+    return BaseSchemaApi.subclasses[0]().get_schema_diagram(request, schemaId, show_attributes, selected_entities, render_distance, generate_inverse_relations)

@@ -1,19 +1,19 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
   contact:
     email: philipp.schmurr@kit.edu
-  description: "This is a Schema extraction API based on the OpenAPI 3.0 specification.\
+  description: "This is a Schema extraction API based on the OpenAPI 3.1 specification.\
     \  You can find out more about\nSwagger at [https://swagger.io](https://swagger.io). "
   license:
     name: MIT
   termsOfService: http://swagger.io/terms/
-  title: Schema API - OpenAPI 3.0
-  version: 0.1.0
+  title: Schema API - OpenAPI 3.1
+  version: 0.3.0
 externalDocs:
   description: Find out more about Swagger
   url: http://swagger.io
 servers:
-- url: http://localhost/api/v0
+- url: http://localhost:7373
 tags:
 - description: Everything about your existing data's schema
   externalDocs:
@@ -50,15 +50,6 @@ paths:
     get:
       description: desc
       operationId: getAllSchemas
-      parameters:
-      - explode: true
-        in: query
-        name: EntityPrefix
-        required: false
-        schema:
-          default: ""
-          type: string
-        style: form
       responses:
         "200":
           content:
@@ -91,14 +82,6 @@ paths:
         schema:
           type: string
         style: simple
-      - explode: true
-        in: query
-        name: EntityPrefix
-        required: false
-        schema:
-          default: ""
-          type: string
-        style: form
       responses:
         "200":
           content:
@@ -133,6 +116,36 @@ paths:
           default: true
           type: boolean
         style: form
+      - description: Specify a list of highlighted entities
+        explode: true
+        in: query
+        name: selectedEntities
+        required: false
+        schema:
+          default: []
+          items:
+            type: string
+          type: array
+        style: form
+      - description: The distance to render when using highlighted entities
+        explode: true
+        in: query
+        name: renderDistance
+        required: false
+        schema:
+          default: 2
+          type: integer
+        style: form
+      - description: Toggles whether to generate inverse relations for each existing
+          relation that has no schema based inverse
+        explode: true
+        in: query
+        name: generateInverseRelations
+        required: false
+        schema:
+          default: true
+          type: boolean
+        style: form
       responses:
         "200":
           content:
@@ -161,14 +174,7 @@ paths:
         schema:
           type: string
         style: simple
-      - explode: true
-        in: query
-        name: EntityPrefix
-        required: false
-        schema:
-          default: ""
-          type: string
-        style: form
+      - $ref: '#/components/parameters/EntityPrefix'
       responses:
         "200":
           content:
@@ -234,142 +240,11 @@ components:
         type: string
       style: form
   schemas:
-    Attribute:
-      example:
-        name: id
-        isCollection: false
-        isKey: false
-        type: bool
-      properties:
-        name:
-          example: id
-          title: name
-          type: string
-        type:
-          enum:
-          - bool
-          - float
-          - int
-          - string
-          title: type
-          type: string
-        isCollection:
-          default: false
-          title: isCollection
-          type: boolean
-        isKey:
-          default: false
-          title: isKey
-          type: boolean
-      required:
-      - isCollection
-      - isKey
-      - name
-      - type
-      title: Attribute
-      type: object
-    Entity:
-      example:
-        name: EntityXY
-        attributes:
-        - name: id
-          isCollection: false
-          isKey: false
-          type: bool
-        - name: id
-          isCollection: false
-          isKey: false
-          type: bool
-        type: strong
-        relatedEntities:
-        - relationName: IsChild
-          cardinalities:
-          - cardinalities
-          - cardinalities
-          name: EntityXY
-          link: http://localhost/entityXY
-        - relationName: IsChild
-          cardinalities:
-          - cardinalities
-          - cardinalities
-          name: EntityXY
-          link: http://localhost/entityXY
-        url: http://localhost/schemata/xy/entities/zy
-        key:
-          selectors:
-          - column
-      properties:
-        url:
-          example: http://localhost/schemata/xy/entities/zy
-          format: url
-          title: url
-          type: string
-        name:
-          example: EntityXY
-          title: name
-          type: string
-        type:
-          enum:
-          - strong
-          - weak
-          title: type
-          type: string
-        attributes:
-          items:
-            $ref: '#/components/schemas/Attribute'
-          title: attributes
-          type: array
-        key:
-          $ref: '#/components/schemas/Entity_key'
-        relatedEntities:
-          items:
-            $ref: '#/components/schemas/EntityLink'
-          title: relatedEntities
-          type: array
-      required:
-      - attributes
-      - key
-      - name
-      - relatedEntities
-      - type
-      - url
-      title: Entity
-      type: object
-      xml:
-        name: entity
     EntityLink:
-      example:
-        relationName: IsChild
-        cardinalities:
-        - cardinalities
-        - cardinalities
-        name: EntityXY
-        link: http://localhost/entityXY
-      properties:
-        name:
-          example: EntityXY
-          title: name
-          type: string
-        relationName:
-          example: IsChild
-          title: relationName
-          type: string
-        cardinalities:
-          items:
-            type: string
-          maxItems: 2
-          minItems: 2
-          title: cardinalities
-          type: array
-        link:
-          example: http://localhost/entityXY
-          format: url
-          title: link
-          type: string
+      example: http://localhost/entityXY
+      format: url
       title: EntityLink
-      type: object
-      xml:
-        name: entity-link
+      type: string
     Format:
       example:
         inputs:
@@ -387,34 +262,12 @@ components:
           title: inputs
           type: array
       title: Format
-      type: object
-    Key:
-      properties:
-        selectors:
-          items:
-            type: string
-          title: selectors
-          type: array
-      title: Key
-      type: object
-      xml:
-        name: key
     Schema:
       example:
         schemaFile: schemaFile
         entities:
-        - relationName: IsChild
-          cardinalities:
-          - cardinalities
-          - cardinalities
-          name: EntityXY
-          link: http://localhost/entityXY
-        - relationName: IsChild
-          cardinalities:
-          - cardinalities
-          - cardinalities
-          name: EntityXY
-          link: http://localhost/entityXY
+        - http://localhost/entityXY
+        - http://localhost/entityXY
         implementation: implementation
         description: File based datasource from XY
         id: case300
@@ -445,15 +298,308 @@ components:
           xml:
             name: entities
       title: Schema
-      type: object
       xml:
         name: schema
-    Entity_key:
-      allOf:
-      - $ref: '#/components/schemas/Key'
-      default: null
+    AttributeModifier:
+      enum:
+      - AttributeModifier: key
       example:
-        selectors:
-        - column
-      nullable: true
-      title: Entity_key
+        attributeModifier: attributeModifier
+      properties:
+        attributeModifier:
+          type: string
+      required:
+      - attributeModifier
+      title: AttributeModifier
+    Attribute:
+      example:
+        attributeName:
+        - attributeName
+        - attributeName
+        hasAttributeModifier:
+        - attributeModifier: attributeModifier
+        - attributeModifier: attributeModifier
+      properties:
+        hasAttributeModifier:
+          default: []
+          items:
+            $ref: '#/components/schemas/AttributeModifier'
+          title: hasAttributeModifier
+          type: array
+        attributeName:
+          items:
+            type: string
+          minItems: 1
+          title: attributeName
+          type: array
+      required:
+      - attributeName
+      title: Attribute
+    EntityModifier:
+      enum:
+      - EntityModifier: weak
+      example:
+        entityModifier: entityModifier
+      properties:
+        entityModifier:
+          type: string
+      required:
+      - entityModifier
+      title: EntityModifier
+    RelationModifier:
+      enum:
+      - RelationModifier: identifying
+      example:
+        relationModifier: relationModifier
+      properties:
+        relationModifier:
+          type: string
+      required:
+      - relationModifier
+      title: RelationModifier
+    Cardinality:
+      enum:
+      - Cardinality: oneOrNone
+      - Cardinality: oneOrMore
+      - Cardinality: any
+      - Cardinality: exactlyOne
+      example:
+        cardinality: cardinality
+      properties:
+        cardinality:
+          type: string
+      required:
+      - cardinality
+      title: Cardinality
+    Relation:
+      example:
+        objectCardinality:
+          cardinality: cardinality
+        subjectCardinality:
+          cardinality: cardinality
+        hasSubjectEntity: ""
+        relationName:
+        - relationName
+        - relationName
+        hasObjectEntity: ""
+        inverseRelation: inverseRelation
+        hasAttribute:
+        - attributeName:
+          - attributeName
+          - attributeName
+          hasAttributeModifier:
+          - attributeModifier: attributeModifier
+          - attributeModifier: attributeModifier
+        - attributeName:
+          - attributeName
+          - attributeName
+          hasAttributeModifier:
+          - attributeModifier: attributeModifier
+          - attributeModifier: attributeModifier
+        hasRelationModifier:
+        - relationModifier: relationModifier
+        - relationModifier: relationModifier
+      properties:
+        hasAttribute:
+          default: []
+          items:
+            $ref: '#/components/schemas/Attribute'
+          title: hasAttribute
+          type: array
+        hasObjectEntity:
+          title: hasObjectEntity
+        hasRelationModifier:
+          default: []
+          items:
+            $ref: '#/components/schemas/RelationModifier'
+          title: hasRelationModifier
+          type: array
+        hasSubjectEntity:
+          title: hasSubjectEntity
+        inverseRelation:
+          nullable: true
+          title: inverseRelation
+          type: string
+        objectCardinality:
+          $ref: '#/components/schemas/Cardinality'
+        subjectCardinality:
+          $ref: '#/components/schemas/Cardinality'
+        relationName:
+          items:
+            type: string
+          minItems: 1
+          title: relationName
+          type: array
+      required:
+      - hasObjectEntity
+      - hasSubjectEntity
+      - objectCardinality
+      - relationName
+      - subjectCardinality
+      title: Relation
+    Entity:
+      example:
+        isObjectInRelation:
+        - objectCardinality:
+            cardinality: cardinality
+          subjectCardinality:
+            cardinality: cardinality
+          hasSubjectEntity: ""
+          relationName:
+          - relationName
+          - relationName
+          hasObjectEntity: ""
+          inverseRelation: inverseRelation
+          hasAttribute:
+          - attributeName:
+            - attributeName
+            - attributeName
+            hasAttributeModifier:
+            - attributeModifier: attributeModifier
+            - attributeModifier: attributeModifier
+          - attributeName:
+            - attributeName
+            - attributeName
+            hasAttributeModifier:
+            - attributeModifier: attributeModifier
+            - attributeModifier: attributeModifier
+          hasRelationModifier:
+          - relationModifier: relationModifier
+          - relationModifier: relationModifier
+        - objectCardinality:
+            cardinality: cardinality
+          subjectCardinality:
+            cardinality: cardinality
+          hasSubjectEntity: ""
+          relationName:
+          - relationName
+          - relationName
+          hasObjectEntity: ""
+          inverseRelation: inverseRelation
+          hasAttribute:
+          - attributeName:
+            - attributeName
+            - attributeName
+            hasAttributeModifier:
+            - attributeModifier: attributeModifier
+            - attributeModifier: attributeModifier
+          - attributeName:
+            - attributeName
+            - attributeName
+            hasAttributeModifier:
+            - attributeModifier: attributeModifier
+            - attributeModifier: attributeModifier
+          hasRelationModifier:
+          - relationModifier: relationModifier
+          - relationModifier: relationModifier
+        hasEntityModifier:
+        - entityModifier: entityModifier
+        - entityModifier: entityModifier
+        entityName:
+        - entityName
+        - entityName
+        entityUrl: entityUrl
+        hasAttribute:
+        - attributeName:
+          - attributeName
+          - attributeName
+          hasAttributeModifier:
+          - attributeModifier: attributeModifier
+          - attributeModifier: attributeModifier
+        - attributeName:
+          - attributeName
+          - attributeName
+          hasAttributeModifier:
+          - attributeModifier: attributeModifier
+          - attributeModifier: attributeModifier
+        isSubjectInRelation:
+        - objectCardinality:
+            cardinality: cardinality
+          subjectCardinality:
+            cardinality: cardinality
+          hasSubjectEntity: ""
+          relationName:
+          - relationName
+          - relationName
+          hasObjectEntity: ""
+          inverseRelation: inverseRelation
+          hasAttribute:
+          - attributeName:
+            - attributeName
+            - attributeName
+            hasAttributeModifier:
+            - attributeModifier: attributeModifier
+            - attributeModifier: attributeModifier
+          - attributeName:
+            - attributeName
+            - attributeName
+            hasAttributeModifier:
+            - attributeModifier: attributeModifier
+            - attributeModifier: attributeModifier
+          hasRelationModifier:
+          - relationModifier: relationModifier
+          - relationModifier: relationModifier
+        - objectCardinality:
+            cardinality: cardinality
+          subjectCardinality:
+            cardinality: cardinality
+          hasSubjectEntity: ""
+          relationName:
+          - relationName
+          - relationName
+          hasObjectEntity: ""
+          inverseRelation: inverseRelation
+          hasAttribute:
+          - attributeName:
+            - attributeName
+            - attributeName
+            hasAttributeModifier:
+            - attributeModifier: attributeModifier
+            - attributeModifier: attributeModifier
+          - attributeName:
+            - attributeName
+            - attributeName
+            hasAttributeModifier:
+            - attributeModifier: attributeModifier
+            - attributeModifier: attributeModifier
+          hasRelationModifier:
+          - relationModifier: relationModifier
+          - relationModifier: relationModifier
+      properties:
+        hasAttribute:
+          default: []
+          items:
+            $ref: '#/components/schemas/Attribute'
+          title: hasAttribute
+          type: array
+        hasEntityModifier:
+          default: []
+          items:
+            $ref: '#/components/schemas/EntityModifier'
+          title: hasEntityModifier
+          type: array
+        isObjectInRelation:
+          default: []
+          items:
+            $ref: '#/components/schemas/Relation'
+          title: isObjectInRelation
+          type: array
+        isSubjectInRelation:
+          default: []
+          items:
+            $ref: '#/components/schemas/Relation'
+          title: isSubjectInRelation
+          type: array
+        entityName:
+          items:
+            type: string
+          minItems: 1
+          title: entityName
+          type: array
+        entityUrl:
+          nullable: true
+          title: entityUrl
+          type: string
+      required:
+      - entityName
+      title: Entity

@@ -8,7 +8,7 @@ from simpler_api.impl.plugins import get_cursor
 from simpler_api.apis.schema_api_base import BaseSchemaApi
 from simpler_api.impl.storage import get_storage
 from simpler_api.models.model_schema import ModelSchema
-from simpler_core.dot import create_graph
+from simpler_core.dot import create_graph, filter_graph
 from simpler_core.schema import apply_schema_correction_if_available, introduce_inverse_relations
 
 
@@ -16,7 +16,6 @@ class SchemaApi(BaseSchemaApi):
     def get_all_schemas(
         self,
         request: Request,
-        entity_prefix: str,
     ) -> List[ModelSchema]:
         storage = get_storage()
         return [
@@ -31,7 +30,6 @@ class SchemaApi(BaseSchemaApi):
         self,
         request: Request,
         schemaId: str,
-        entity_prefix: str,
     ) -> ModelSchema:
         storage = get_storage()
         for data_name in storage.list_available_data():
@@ -46,6 +44,9 @@ class SchemaApi(BaseSchemaApi):
         request: Request,
         schemaId: str,
         show_attributes: bool,
+        selected_entities: List[str],
+        render_distance: int,
+        generate_inverse_relations: bool,
     ) -> str:
         try:
             # we should be able to directly get a cursor here based on the schema Id - if not we issue a 404
@@ -56,9 +57,12 @@ class SchemaApi(BaseSchemaApi):
         entities = cursor.get_all_entities()
 
         entities = apply_schema_correction_if_available(entities, get_storage(), schemaId)
-        introduce_inverse_relations(entities)
+        if generate_inverse_relations:
+            introduce_inverse_relations(entities)
 
         graph = create_graph(entities, show_attributes)
+        if len(selected_entities) > 0:
+            graph = filter_graph(graph, selected_entities, render_distance)
 
         requested_data_type = request.headers['accept']
         if requested_data_type == 'image/svg+xml':
