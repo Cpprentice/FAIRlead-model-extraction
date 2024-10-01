@@ -10,7 +10,7 @@ info:
   license:
     name: MIT
     identifier: MIT
-  version: 0.2.0
+  version: 0.3.0
 externalDocs:
   description: Find out more about Swagger
   url: http://swagger.io
@@ -55,8 +55,8 @@ paths:
       summary: Get all avialable schemas from this API server
       description: desc
       operationId: getAllSchemas
-      parameters:
-        - $ref: '#/components/parameters/EntityPrefix'
+      # parameters:
+      #   - $ref: '#/components/parameters/EntityPrefix'
       responses:
         '200':
           description: successful operation
@@ -87,7 +87,7 @@ paths:
           required: true
           schema:
             type: string
-        - $ref: '#/components/parameters/EntityPrefix'
+      #   - $ref: '#/components/parameters/EntityPrefix'
       responses:
         '200':
           description: 'successful operation'
@@ -117,6 +117,27 @@ paths:
           schema:
             type: boolean
             default: true
+        - name: selectedEntities
+          in: query
+          description: Specify a list of highlighted entities
+          schema:
+            type: array
+            items:
+              type: string
+            default: []
+        - name: renderDistance
+          description: The distance to render when using highlighted entities
+          in: query
+          schema:
+            type: integer
+            default: 2
+        - name: generateInverseRelations
+          in: query
+          description: Toggles whether to generate inverse relations for each existing relation that has no schema based inverse
+          schema:
+            type: boolean
+            default: true
+
       responses:
         '200':
           description: successful operation

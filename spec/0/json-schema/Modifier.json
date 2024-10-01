@@ -16,10 +16,10 @@
             "Modifier": "key"
         },
         {
-            "Modifier": "weak"
+            "Modifier": "identifying"
         },
         {
-            "Modifier": "identifying"
+            "Modifier": "weak"
         }
     ]
 }

@@ -38,6 +38,17 @@
                 "type": "string"
             },
             "minItems": 1
+        },
+        "entityUrl": {
+            "oneOf": [
+                {
+                    "type": "string"
+                },
+                {
+                    "type": "null"
+                }
+            ],
+            "default": null
         }
     },
     "required": [

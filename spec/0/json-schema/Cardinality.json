@@ -13,16 +13,16 @@
     ],
     "enum": [
         {
-            "Cardinality": "exactlyOne"
+            "Cardinality": "oneOrNone"
         },
         {
-            "Cardinality": "oneOrNone"
+            "Cardinality": "oneOrMore"
         },
         {
             "Cardinality": "any"
         },
         {
-            "Cardinality": "oneOrMore"
+            "Cardinality": "exactlyOne"
         }
     ]
 }

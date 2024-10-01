@@ -64,6 +64,13 @@
                   rdfs:range :Entity .
 
 
+###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/inverseRelation
+:inverseRelation rdf:type owl:ObjectProperty ;
+                 owl:inverseOf :inverseRelation ;
+                 rdfs:domain :Relation ;
+                 rdfs:range :Relation .
+
+
 ###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/isAttributeOf
 :isAttributeOf rdf:type owl:ObjectProperty ;
                rdfs:domain :Attribute ;
@@ -111,6 +118,12 @@
             rdfs:range xsd:string .
 
 
+###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/entityUrl
+:entityUrl rdf:type owl:DatatypeProperty ;
+           rdfs:domain :Entity ;
+           rdfs:range xsd:string .
+
+
 ###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/relationName
 :relationName rdf:type owl:DatatypeProperty ;
               rdfs:domain :Relation ;
@@ -156,6 +169,11 @@
                           owl:onProperty :entityName ;
                           owl:minQualifiedCardinality "1"^^xsd:nonNegativeInteger ;
                           owl:onDataRange xsd:string
+                        ] ,
+                        [ rdf:type owl:Restriction ;
+                          owl:onProperty :entityUrl ;
+                          owl:maxQualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+                          owl:onDataRange xsd:string
                         ] .
 
 
@@ -190,6 +208,11 @@
                             owl:onProperty :subjectCardinality ;
                             owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger ;
                             owl:onClass :Cardinality
+                          ] ,
+                          [ rdf:type owl:Restriction ;
+                            owl:onProperty :inverseRelation ;
+                            owl:maxQualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+                            owl:onClass :Relation
                           ] ,
                           [ rdf:type owl:Restriction ;
                             owl:onProperty :relationName ;

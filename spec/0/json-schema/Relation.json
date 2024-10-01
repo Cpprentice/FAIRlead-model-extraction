@@ -26,6 +26,17 @@
             "format": "url",
             "pattern": "http://localhost:7373/schemata/[^/]+/entities/[^/]+"
         },
+        "inverseRelation": {
+            "oneOf": [
+                {
+                    "type": "string"
+                },
+                {
+                    "type": "null"
+                }
+            ],
+            "default": null
+        },
         "objectCardinality": {
             "$ref": "Cardinality.json"
         },
