@@ -15,7 +15,8 @@ from xmlschema.validators import (XsdComplexType, XsdUnique, XsdKey, XsdKeyref, 
 
 from simpler_core.cardinality import create_cardinality
 from simpler_core.plugin import DataSourcePlugin, DataSourceType, InputDataError
-from simpler_core.schema import make_hierarchical_name, is_hierarchical_path, split_prefix_and_item_name
+from simpler_core.schema import make_hierarchical_name, is_hierarchical_path, split_prefix_and_item_name, \
+    path_separator, convert_path_separator
 
 try:
     from simpler_model import Relation, Entity, Attribute, EntityModifier, Cardinality, RelationModifier, \
@@ -37,8 +38,12 @@ class EnhancedXsdElement:
 
     @property
     def path(self) -> str:
-        prefix = f'{self.parent.path}' if self.parent is not None else ''
-        return f'{prefix}/{self.xsd_element.prefixed_name}'
+        return make_hierarchical_name(
+            self.parent.path if self.parent is not None else '',
+            self.xsd_element.prefixed_name
+        )
+        # prefix = f'{self.parent.path}' if self.parent is not None else ''
+        # return f'{prefix}/{self.xsd_element.prefixed_name}'
 
     @property
     def children(self) -> Iterator['EnhancedXsdElement']:
@@ -71,7 +76,7 @@ def tree_flattener(
         max_depth=10,
         filter_function=lambda x: True
 ) -> Iterator[EnhancedXsdElement]:
-    depth = element.path.count('/')
+    depth = element.path.count(path_separator)
     if depth < max_depth and filter_function(element):
         yield element
         for child in element.children:
@@ -91,7 +96,7 @@ def find_all_elements_recursively_enhanced(
     if elements is None:
         elements = []
 
-    path_depth = element.path.count('/')
+    path_depth = element.path.count(path_separator)
     if path_depth >= 10:
         return elements
     if not is_primitive_element(element):
@@ -112,8 +117,9 @@ def find_all_elements_recursively(
     if elements is None:
         elements = dict()
 
-    path = f'{base_path}/{element.prefixed_name}'
-    path_depth = path.count('/')
+    # path = f'{base_path}/{element.prefixed_name}'
+    path = make_hierarchical_name(base_path, element.prefixed_name)
+    path_depth = path.count(path_separator)
     if path_depth >= 10:
         return elements
     if path not in elements:
@@ -211,7 +217,13 @@ def build_attributes_and_related_entities_enhanced(
         if isinstance(reference, XsdKeyref):
             target_element = next(iter(reference.refer.elements.keys()))
             field_objects = [
-                element.xpath_proxy.find(f'{element.path}/{field.path}')  # TODO this probably fails with a non-local field path
+                # element.xpath_proxy.find(f'{element.path}/{field.path}')  # TODO this probably fails with a non-local field path
+                element.xpath_proxy.find(
+                    convert_path_separator(
+                        make_hierarchical_name(element.path, field.path),
+                        '/'
+                    )
+                )  # TODO this probably fails with a non-local field path
                 for field in reference.fields
             ]
 
@@ -245,7 +257,13 @@ def build_attributes_and_related_entities_enhanced(
             ))
         elif isinstance(reference, XsdKey):
             field_objects = [
-                element.xpath_proxy.find(f'{element.path}/{field.path}')
+                # element.xpath_proxy.find(f'{element.path}/{field.path}')
+                element.xpath_proxy.find(
+                    convert_path_separator(
+                        make_hierarchical_name(element.path, field.path),
+                        '/'
+                    )
+                )
                 # TODO this probably fails with a non-local field path
                 for field in reference.fields
             ]
@@ -568,7 +586,7 @@ class XmlDataSourcePlugin(DataSourcePlugin):
                     if element.parent is not None:
                         removals.append(element)
 
-        for removal in sorted(removals, key=lambda x: x.path.count('/'), reverse=True):
+        for removal in sorted(removals, key=lambda x: x.path.count(path_separator), reverse=True):
             removal.parent.child_blacklist.add(removal.path.replace(removal.parent.path, '')[1:])
 
         for addition in additions:
@@ -595,6 +613,7 @@ class XmlDataSourcePlugin(DataSourcePlugin):
         schema_roots = [instance_root_schema] + custom_root_elements
 
         entities = collections.defaultdict(list)
+        entity_ids = set()
         # for path, element in elements.items():
         for element in full_flattener(schema_roots, filter_function=lambda x: not is_primitive_element(x)):
             path = element.path
@@ -605,7 +624,7 @@ class XmlDataSourcePlugin(DataSourcePlugin):
             entity = Entity(
                 entity_name=[name],
                 has_attribute=[],
-                has_entity_modifier=None if '/' not in name else [EntityModifier(entity_modifier='weak')],
+                has_entity_modifier=None if path_separator not in name else [EntityModifier(entity_modifier='weak')],
                 is_object_in_relation=None,
                 is_subject_in_relation=None
             )
@@ -613,8 +632,21 @@ class XmlDataSourcePlugin(DataSourcePlugin):
             entity.has_attribute = attributes
             entity.is_subject_in_relation = related_entities
             # prefix, element_name = f'/{path}'.rsplit('/', maxsplit=1)
-            prefix, element_name = path.rsplit('/', maxsplit=1)
+            # prefix, element_name = path.rsplit('/', maxsplit=1)
+            prefix, element_name = split_prefix_and_item_name(path)
             entities[prefix[1:]].append(entity)
+            entity_ids.add(name)
+
+        # If we hit the recursion depth we might end up with invalid relations that reference elements that are
+        #  nested even further - we need to remove those relations again - doing this in a second loop ensures we can
+        #  check for existence
+        for prefix, entity_list in entities.items():
+            for entity in entity_list:
+                corrected_relations = []
+                for relation in entity.is_subject_in_relation:
+                    if relation.has_object_entity in entity_ids and relation.has_subject_entity in entity_ids:
+                        corrected_relations.append(relation)
+                entity.is_subject_in_relation = corrected_relations
 
         return entities
 
