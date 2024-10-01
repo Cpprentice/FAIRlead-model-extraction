@@ -9,7 +9,7 @@ from typing import List, Callable
 from simpler_core.dot import create_graph, filter_graph
 from simpler_core.plugin import DataSourcePlugin, DataSourceCursor, DataSourceType
 from simpler_core.schema import serialize_entity_list_to_yaml, load_external_schema_from_yaml, extend_schema_from_yaml, \
-    apply_schema_correction_if_available
+    apply_schema_correction_if_available, introduce_inverse_relations
 from simpler_core.storage import ManualFilesystemDataSourceStorage
 
 
@@ -28,6 +28,10 @@ def get_arg_parser(plugins: List[DataSourceType]) -> ArgumentParser:
                      help='Specify a list of entities the diagram shall show up plus up to "distance" neighbors')
     ecp.add_argument('--distance', metavar='<int>', type=int, default=2,
                      help='Rendering distance for DOT only used with --select-entity')
+    ecp.add_argument('--dont-generate-inverse-relations', type=bool, default=False,
+                     help='Disable the automatic generation of inverse relations')
+    ecp.add_argument('--hide-arguments', type=bool, default=False,
+                     help='Flag to prevent argument rendering')
 
     schema_merge_command_parser = smcp = sub_commands.add_parser('schema')
     smcp.add_argument('base_schema_file', metavar='<base-schema-file>', help='A full spec file')
@@ -107,10 +111,13 @@ def extract_command(args: Namespace, parser: ArgumentParser):
 
     entities = apply_schema_correction_if_available(entities, storage, 'cli')
 
+    if not args.dont_generate_inverse_relations:
+        introduce_inverse_relations(entities)
+
     output_string = ''
 
     if args.format == 'DOT':
-        dot = create_graph(entities, show_attributes=True)
+        dot = create_graph(entities, show_attributes=not args.hide_arguments)
         if args.select_entity:
             dot = filter_graph(dot, args.select_entity, args.distance)
         output_string = str(dot)
