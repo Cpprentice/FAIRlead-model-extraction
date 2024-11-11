@@ -40,7 +40,7 @@ class EnhancedXsdElement:
     def path(self) -> str:
         return make_hierarchical_name(
             self.parent.path if self.parent is not None else '',
-            self.xsd_element.prefixed_name
+            self.xsd_element.prefixed_name.replace(f'{{{self.xsd_element.target_namespace}}}', '')
         )
         # prefix = f'{self.parent.path}' if self.parent is not None else ''
         # return f'{prefix}/{self.xsd_element.prefixed_name}'
@@ -226,6 +226,9 @@ def build_attributes_and_related_entities_enhanced(
                 )  # TODO this probably fails with a non-local field path
                 for field in reference.fields
             ]
+            field_objects = [field for field in field_objects if field is not None]
+            if len(field_objects) == 0:
+                continue
 
             # Remove the "foreign keys" from the attribute unless they are no primary key
             attributes_to_remove = []
@@ -267,6 +270,7 @@ def build_attributes_and_related_entities_enhanced(
                 # TODO this probably fails with a non-local field path
                 for field in reference.fields
             ]
+            field_objects = [field for field in field_objects if field is not None]
             for field in field_objects:
                 for attribute in attributes:
                     if attribute.attribute_name[0] == field.name:
@@ -547,16 +551,19 @@ class XmlDataSourcePlugin(DataSourcePlugin):
         return recurse_tree(root)
 
     @staticmethod
-    def _generate_xsd_schema(schema: XMLSchema11, data_root: lxml.etree._Element) -> Dict[str, List[Entity]]:
+    def _generate_xsd_schema(schema: XMLSchema11, data_root: lxml.etree._Element | None) -> Dict[str, List[Entity]]:
         # it seems some schemas do have more than one root element - which means we probably need to find the real root
         #  from data
         # if len(schema.root_elements) != 1:
         #     raise RuntimeError('It seems the schema has multiple roots')
         # instance_root_schema = schema.root_elements[0]  # type: XsdElement
-        instance_root_schema = \
-            [EnhancedXsdElement(x) for x in schema.root_elements if x.prefixed_name == data_root.tag][0]
+        if data_root is not None:
+            instance_root_schemas = \
+                [EnhancedXsdElement(x) for x in schema.root_elements if x.name == data_root.tag]
+        else:
+            instance_root_schemas = [EnhancedXsdElement(x) for x in schema.root_elements]
 
-        if instance_root_schema.occurs != (1, 1):
+        if any(irs.occurs != (1, 1) for irs in instance_root_schemas):
             raise RuntimeError('The schema root seems to allow something else than exactly one root')
 
         # It seems findall does in fact not find all the elements - we will need a path based deep-search instead
@@ -566,51 +573,54 @@ class XmlDataSourcePlugin(DataSourcePlugin):
         # TODO investigate if the recursive search does also find the entities of potential values for attributes -
         #  do we even need that?
 
-        custom_root_elements = []
+        schema_roots = []
+        for instance_root_schema in instance_root_schemas:
 
-        # the following contains a dict that is not reliant on the iterator anymore - the objects however should be refs
-        elements_grouped_by_tag = group_by(tree_flattener(instance_root_schema), lambda x: x.prefixed_name)
-        additions: List[EnhancedXsdElement] = []
-        removals: List[EnhancedXsdElement] = []
-        for tag, group in elements_grouped_by_tag.items():
-            keys = set(
-                reference
-                for element in group
-                for reference in element.selected_by
-                if isinstance(reference, XsdKey)
-            )
-            if len(keys) > 0 and all(key in element.selected_by for element in group for key in keys):
-                # All the occurring elements share the same key(s) -> we can merge them to be global (and strong?)
-                additions.append(group[0])
-                for element in group:
-                    if element.parent is not None:
-                        removals.append(element)
+            custom_root_elements = []
 
-        for removal in sorted(removals, key=lambda x: x.path.count(path_separator), reverse=True):
-            removal.parent.child_blacklist.add(removal.path.replace(removal.parent.path, '')[1:])
+            # the following contains a dict that is not reliant on the iterator anymore - the objects however should be refs
+            elements_grouped_by_tag = group_by(tree_flattener(instance_root_schema), lambda x: x.prefixed_name)
+            additions: List[EnhancedXsdElement] = []
+            removals: List[EnhancedXsdElement] = []
+            for tag, group in elements_grouped_by_tag.items():
+                keys = set(
+                    reference
+                    for element in group
+                    for reference in element.selected_by
+                    if isinstance(reference, XsdKey)
+                )
+                if len(keys) > 0 and all(key in element.selected_by for element in group for key in keys):
+                    # All the occurring elements share the same key(s) -> we can merge them to be global (and strong?)
+                    additions.append(group[0])
+                    for element in group:
+                        if element.parent is not None:
+                            removals.append(element)
 
-        for addition in additions:
-            new_element = EnhancedXsdElement(addition.xsd_element)
-            new_element.child_blacklist = addition.child_blacklist.copy()
-            custom_root_elements.append(new_element)
+            for removal in sorted(removals, key=lambda x: x.path.count(path_separator), reverse=True):
+                removal.parent.child_blacklist.add(removal.path.replace(removal.parent.path, '')[1:])
 
-        # component_lookup = collect_components_recursively(schema)
-        #
-        # component_mapping = {
-        #     'Xsd11Key': 'key',
-        #     'XsdKey': 'key',
-        #     'Xsd11Keyref': 'reference',
-        #     'XsdKeyref': 'reference',
-        #     'Xsd11Unique': 'unique',
-        #     'XsdUnique': 'unique'
-        # }
-        #
-        # custom_component_lookup = collections.defaultdict(list)
-        # for source, target in component_mapping.items():
-        #     custom_component_lookup[target].extend(component_lookup[source] if source in component_lookup else [])
+            for addition in additions:
+                new_element = EnhancedXsdElement(addition.xsd_element)
+                new_element.child_blacklist = addition.child_blacklist.copy()
+                custom_root_elements.append(new_element)
 
-        # return schema, all_elements_new, custom_component_lookup, data_root
-        schema_roots = [instance_root_schema] + custom_root_elements
+            # component_lookup = collect_components_recursively(schema)
+            #
+            # component_mapping = {
+            #     'Xsd11Key': 'key',
+            #     'XsdKey': 'key',
+            #     'Xsd11Keyref': 'reference',
+            #     'XsdKeyref': 'reference',
+            #     'Xsd11Unique': 'unique',
+            #     'XsdUnique': 'unique'
+            # }
+            #
+            # custom_component_lookup = collections.defaultdict(list)
+            # for source, target in component_mapping.items():
+            #     custom_component_lookup[target].extend(component_lookup[source] if source in component_lookup else [])
+
+            # return schema, all_elements_new, custom_component_lookup, data_root
+            schema_roots.extend([instance_root_schema] + custom_root_elements)
 
         entities = collections.defaultdict(list)
         entity_ids = set()
@@ -664,8 +674,9 @@ class XmlDataSourcePlugin(DataSourcePlugin):
                 schema = XMLSchema11(stream_lookup['xsd'], base_url=extra_directory)
             if 'dtd' in stream_lookup:
                 raise NotImplementedError('Support for dtd schemas has not been added yet')
-            data_tree = lxml.etree.parse(stream_lookup['data'])
-            data_root = data_tree.getroot()
+            if 'data' in stream_lookup:
+                data_tree = lxml.etree.parse(stream_lookup['data'])
+                data_root = data_tree.getroot()
 
         if schema is not None:
             try:
