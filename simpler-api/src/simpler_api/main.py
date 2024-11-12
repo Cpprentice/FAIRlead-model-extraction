@@ -14,11 +14,14 @@
 
 
 from fastapi import FastAPI
+from starlette.middleware.cors import CORSMiddleware
 
+from simpler_core.settings import Settings
 from simpler_api.apis.entity_api import router as EntityApiRouter
 from simpler_api.apis.format_api import router as FormatApiRouter
 from simpler_api.apis.schema_api import router as SchemaApiRouter
 
+settings = Settings()
 app = FastAPI(
     title="Schema API - OpenAPI 3.1",
     description="This is a Schema extraction API based on the OpenAPI 3.1 specification.  You can find out more about Swagger at [https://swagger.io](https://swagger.io). ",
@@ -28,3 +31,11 @@ app = FastAPI(
 app.include_router(EntityApiRouter)
 app.include_router(FormatApiRouter)
 app.include_router(SchemaApiRouter)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
