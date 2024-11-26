@@ -1,10 +1,12 @@
 import json
+import re
 import sys
 from pathlib import Path
 from typing import List, Dict
 
 from datamodel_code_generator import generate, InputFileType, DataModelType, PythonVersion, load_yaml
-from datamodel_code_generator.model import get_data_model_types
+from datamodel_code_generator.model import get_data_model_types, DataModel
+from datamodel_code_generator.model.pydantic_v2 import RootModel
 
 from simpler_core.cardinality import create_cardinality
 from simpler_core.plugin import DataSourceType, DataSourcePlugin, EntityLink
@@ -33,6 +35,75 @@ class JSONDataSourcePlugin(DataSourcePlugin):
             )
 
         return self.generate_model_from_dict(obj)
+
+    @staticmethod
+    def generate_model_from_parsed_schema(models: List[DataModel]) -> List[Entity]:
+        target_name_lookup = {
+            model.path: model.class_name
+            for model in models
+        }
+        entities = []
+        for model in models:
+
+            # if isinstance(model, RootModel):
+            #     continue  # TODO find out how to handle this. It seems this happens for type aliases (e.g. EntityLink für str)
+
+            relations = []
+            attributes = []
+
+            if not isinstance(model, RootModel):
+                for field in model.fields:
+                    if len(field.unresolved_types) == 0:
+                        attributes.append(Attribute(
+                            attribute_name=[field.name],
+                            has_attribute_modifier=None
+                        ))
+                    else:
+                        type_hint_string = field.type_hint.lower()
+                        optional_match = re.match(r'optional\[(.*)]', type_hint_string)
+                        type_hint_string_without_optional = type_hint_string
+                        has_optional = False
+                        if optional_match is not None:
+                            has_optional = True
+                            type_hint_string_without_optional = optional_match.group(1)
+                        collection_match = re.match(
+                            r'(collection|sequence|mutablesequence|set|mutableset|mapping|mutablemapping|'
+                            r'list|deque|dict|ordereddict)(?:\[(.+)])?',
+                            type_hint_string_without_optional
+                        )
+                        is_collection = collection_match is not None
+
+                        object_cardinality_min = 1
+                        object_cardinality_max = 1
+
+                        if is_collection:
+                            object_cardinality_max = sys.maxsize
+                            object_cardinality_min = 0
+                        if has_optional:
+                            object_cardinality_min = 0
+
+                        object_cardinality = (object_cardinality_min, object_cardinality_max)
+
+                        target_path, = field.unresolved_types
+                        relations.append(Relation(
+                            relation_name=[field.name],
+                            has_relation_modifier=None,
+                            has_object_entity=target_name_lookup[target_path],
+                            has_subject_entity=model.class_name,
+                            object_cardinality=create_cardinality(object_cardinality),
+                            subject_cardinality=create_cardinality((1, 1)),
+                            has_attribute=[]
+                        ))
+
+            entities.append(Entity(
+                entity_name=[model.class_name],
+                has_attribute=attributes,
+                is_subject_in_relation=relations,
+                is_object_in_relation=[],
+                # has_entity_modifier=None if model.path == '#' else [EntityModifier(entity_modifier='weak')]
+                has_entity_modifier=None
+            ))
+        return entities
 
     @staticmethod
     def generate_model_from_dict(obj: Dict) -> List[Entity]:
@@ -121,45 +192,6 @@ class JSONDataSourcePlugin(DataSourcePlugin):
             # **kwargs,
         )
 
-        parser.parse_raw()
-        models = parser.results
-
-        target_name_lookup = {
-            model.path: model.class_name
-            for model in models
-        }
-        entities = []
-        for model in models:
-
-            relations = []
-            attributes = []
-
-            for field in model.fields:
-                if len(field.unresolved_types) == 0:
-                    attributes.append(Attribute(
-                        attribute_name=[field.name],
-                        has_attribute_modifier=None
-                    ))
-                else:
-                    target_path, = field.unresolved_types
-                    relations.append(Relation(
-                        relation_name=[field.name],
-                        has_relation_modifier=None,
-                        has_object_entity=target_name_lookup[target_path],
-                        has_subject_entity=model.class_name,
-                        object_cardinality=create_cardinality((0, sys.maxsize)),
-                        subject_cardinality=create_cardinality((1, 1)),
-                        has_attribute=[]
-                    ))
-
-            entities.append(Entity(
-                entity_name=[model.class_name],
-                has_attribute=attributes,
-                is_subject_in_relation=relations,
-                is_object_in_relation=[],
-                has_entity_modifier=None if model.path == '#' else [EntityModifier(entity_modifier='weak')]
-            ))
-
         # generate(
         #     data_content,
         #     input_file_type=InputFileType.Json,
@@ -168,7 +200,9 @@ class JSONDataSourcePlugin(DataSourcePlugin):
         #     target_python_version=PythonVersion.PY_312
         # )
 
-        return entities
+        parser.parse_raw()
+        models = parser.results
+        return JSONDataSourcePlugin.generate_model_from_parsed_schema(models)
 
     def get_strong_entities(self, name: str) -> List[Entity]:
         pass

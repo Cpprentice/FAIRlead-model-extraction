@@ -23,7 +23,7 @@ class TabularDataSourceType(DataSourceType):
     inputs = [
         'data_no_header',  # A zip file containing all partial CSV files
         'data_header',     # A zip file containing all partial CSV files
-        'schema'
+        # 'schema'
     ]
     input_validation_statement = r'(data_header.*|data_no_header.*)'
 
@@ -59,13 +59,13 @@ class TabularDataSourcePlugin(DataSourcePlugin):
                 with ZipFile(stream_lookup['data_header']) as zip_handle:
                     zip_handle.extractall(zip_directory)
                 with_header_data = extract_csv_data(Path(zip_directory), lambda stream: csv.DictReader(stream))
-            if 'schema' in stream_lookup:
-                schema_data = load_external_schema_from_yaml(stream_lookup['schema'])
-                schema = {
-                    entity.entity_name[0]: entity
-                    for entity_data in schema_data
-                    for entity in [Entity.from_dict(entity_data)]
-                }
+            # if 'schema' in stream_lookup:
+            #     schema_data = load_external_schema_from_yaml(stream_lookup['schema'])
+            #     schema = {
+            #         entity.entity_name[0]: entity
+            #         for entity_data in schema_data
+            #         for entity in [Entity.from_dict(entity_data)]
+            #     }
 
         if with_header_data is None:
             with_header_data = {}
@@ -92,8 +92,9 @@ class TabularDataSourcePlugin(DataSourcePlugin):
                 )
                 attributes = []
                 for heading in entity_data[0].keys():
+                    combined_name = f'{entity_name}_{heading}'
                     attribute = Attribute(
-                        attribute_name=[heading],
+                        attribute_name=[combined_name],
                         is_attribute_of=None,
                         has_attribute_modifier=[]
                     )
