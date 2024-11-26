@@ -8,6 +8,6 @@ from simpler_model.models.model_schema import ModelSchema
 from simpler_model.models.relation import Relation
 from simpler_model.models.relation_modifier import RelationModifier
 
-SPECIFICATION_VERSION = '0.3.0'
+SPECIFICATION_VERSION = '0.4.0'
 
 __all__ = ['Attribute', 'AttributeModifier', 'Cardinality', 'Entity', 'EntityModifier', 'Format', 'ModelSchema', 'Relation', 'RelationModifier', 'SPECIFICATION_VERSION']

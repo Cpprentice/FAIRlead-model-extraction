@@ -8,7 +8,7 @@ info:
     name: MIT
   termsOfService: http://swagger.io/terms/
   title: Schema API - OpenAPI 3.1
-  version: 0.3.0
+  version: 0.4.0
 externalDocs:
   description: Find out more about Swagger
   url: http://swagger.io
@@ -42,6 +42,18 @@ paths:
                 items:
                   $ref: '#/components/schemas/Format'
                 type: array
+            application/x-yaml:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Format'
+                type: array
+            application/xml:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Format'
+                type: array
+                xml:
+                  name: formats
           description: successful operation
       summary: Get all supported formats of this API
       tags:
@@ -50,6 +62,10 @@ paths:
     get:
       description: desc
       operationId: getAllSchemas
+      parameters:
+      - $ref: '#/components/parameters/preventOptimization'
+      - $ref: '#/components/parameters/preventAutomaticOptimization'
+      - $ref: '#/components/parameters/generateInverseRelations'
       responses:
         "200":
           content:
@@ -65,8 +81,13 @@ paths:
                 type: array
                 xml:
                   name: schemas
+            application/x-yaml:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Schema'
+                type: array
           description: successful operation
-      summary: Get all avialable schemas from this API server
+      summary: Get all available schemas from this API server
       tags:
       - schema
   /schemata/{schemaId}:
@@ -74,18 +95,20 @@ paths:
       description: desc
       operationId: getSchemaByID
       parameters:
-      - description: ID of schema to return
-        explode: false
-        in: path
-        name: schemaId
-        required: true
-        schema:
-          type: string
-        style: simple
+      - $ref: '#/components/parameters/schemaId'
+      - $ref: '#/components/parameters/preventOptimization'
+      - $ref: '#/components/parameters/preventAutomaticOptimization'
+      - $ref: '#/components/parameters/generateInverseRelations'
       responses:
         "200":
           content:
             application/json:
+              schema:
+                $ref: '#/components/schemas/Schema'
+            application/x-yaml:
+              schema:
+                $ref: '#/components/schemas/Schema'
+            application/xml:
               schema:
                 $ref: '#/components/schemas/Schema'
           description: successful operation
@@ -99,14 +122,7 @@ paths:
       description: desc
       operationId: getSchemaDiagram
       parameters:
-      - description: ID of schema to return
-        explode: false
-        in: path
-        name: schemaId
-        required: true
-        schema:
-          type: string
-        style: simple
+      - $ref: '#/components/parameters/schemaId'
       - description: Toggle the rendering state of attributes
         explode: true
         in: query
@@ -136,16 +152,9 @@ paths:
           default: 2
           type: integer
         style: form
-      - description: Toggles whether to generate inverse relations for each existing
-          relation that has no schema based inverse
-        explode: true
-        in: query
-        name: generateInverseRelations
-        required: false
-        schema:
-          default: true
-          type: boolean
-        style: form
+      - $ref: '#/components/parameters/preventOptimization'
+      - $ref: '#/components/parameters/preventAutomaticOptimization'
+      - $ref: '#/components/parameters/generateInverseRelations'
       responses:
         "200":
           content:
@@ -166,15 +175,10 @@ paths:
       description: desc
       operationId: getEntitiesBySchema
       parameters:
-      - description: ID of schema to return
-        explode: false
-        in: path
-        name: schemaId
-        required: true
-        schema:
-          type: string
-        style: simple
-      - $ref: '#/components/parameters/EntityPrefix'
+      - $ref: '#/components/parameters/schemaId'
+      - $ref: '#/components/parameters/preventOptimization'
+      - $ref: '#/components/parameters/preventAutomaticOptimization'
+      - $ref: '#/components/parameters/generateInverseRelations'
       responses:
         "200":
           content:
@@ -190,6 +194,11 @@ paths:
                 type: array
                 xml:
                   name: entities
+            application/x-yaml:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Entity'
+                type: array
           description: successful operation
       summary: Get all entities of a schema
       tags:
@@ -199,22 +208,11 @@ paths:
       description: desc
       operationId: getEntityById
       parameters:
-      - description: ID of schema to return
-        explode: false
-        in: path
-        name: schemaId
-        required: true
-        schema:
-          type: string
-        style: simple
-      - description: ID of entity to return
-        explode: false
-        in: path
-        name: entityId
-        required: true
-        schema:
-          type: string
-        style: simple
+      - $ref: '#/components/parameters/schemaId'
+      - $ref: '#/components/parameters/entityId'
+      - $ref: '#/components/parameters/preventOptimization'
+      - $ref: '#/components/parameters/preventAutomaticOptimization'
+      - $ref: '#/components/parameters/generateInverseRelations'
       responses:
         "200":
           content:
@@ -222,6 +220,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Entity'
             application/xml:
+              schema:
+                $ref: '#/components/schemas/Entity'
+            application/x-yaml:
               schema:
                 $ref: '#/components/schemas/Entity'
           description: successful operation
@@ -237,18 +238,62 @@ components:
       required: false
       schema:
         default: ""
-        type: string
       style: form
+    preventOptimization:
+      explode: true
+      in: query
+      name: preventOptimization
+      required: false
+      schema:
+        default: false
+        type: boolean
+      style: form
+    preventAutomaticOptimization:
+      explode: true
+      in: query
+      name: preventAutomaticOptimization
+      required: false
+      schema:
+        default: false
+        type: boolean
+      style: form
+    generateInverseRelations:
+      description: Toggles whether to generate inverse relations for each existing
+        relation that has no schema based inverse
+      explode: true
+      in: query
+      name: generateInverseRelations
+      required: false
+      schema:
+        default: false
+        type: boolean
+      style: form
+    entityId:
+      description: ID of entity to return
+      explode: false
+      in: path
+      name: entityId
+      required: true
+      schema:
+        type: string
+      style: simple
+    schemaId:
+      description: ID of schema to access
+      explode: false
+      in: path
+      name: schemaId
+      required: true
+      schema:
+        type: string
+      style: simple
   schemas:
     EntityLink:
-      example: http://localhost/entityXY
       format: url
       title: EntityLink
       type: string
     Format:
       properties:
         name:
-          example: XML
           type: string
         inputs:
           items:
@@ -257,10 +302,8 @@ components:
     Schema:
       properties:
         id:
-          example: case300
           type: string
         description:
-          example: File based datasource from XY
           type: string
         implementation:
           type: string

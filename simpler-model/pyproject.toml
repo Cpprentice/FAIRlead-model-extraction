@@ -52,7 +52,7 @@ maintainers = [
 
 dependencies = [
   "typing-extensions~=4.8.0",
-  "pydantic~=2.6.4"
+  "pydantic~=2.7.0"
 ]
 
 [project.urls]

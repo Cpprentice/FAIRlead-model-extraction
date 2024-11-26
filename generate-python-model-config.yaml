@@ -16,7 +16,7 @@ globalProperties:
 inputSpec: /local/spec/0/openapi3_1_merged.yaml
 additionalProperties:
   allowUnicodeIdentifiers: false
-  disallowAdditionalPropertiesIfNotPresent: false  # custom
+  disallowAdditionalPropertiesIfNotPresent: true  # custom
   ensureUniqueParams: true
   enumUnknownDefaultCase: false
   fastapiImplementationPackage: simpler_model.impl  # custom
