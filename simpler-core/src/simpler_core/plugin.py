@@ -1,13 +1,23 @@
 from abc import abstractmethod, ABC, ABCMeta
 import re
+from dataclasses import dataclass
 from typing import ClassVar, List, Tuple, Type, Dict, Callable
 
+from pydantic import BaseModel, Field
+
+from simpler_core.schema import apply_schema_correction_if_available, optimize_schema, introduce_inverse_relations
 from simpler_core.storage import DataSourceStorage
 try:
     from simpler_model import Entity, Relation
     EntityLink = Relation
 except ImportError:
     from simpler_model import Entity, EntityLink
+
+
+class OptimizationSettings(BaseModel):
+    prevent_optimization: bool = Field(False, alias='preventOptimization')
+    prevent_automatic_optimization: bool = Field(False, alias='preventAutomaticOptimization')
+    generate_inverse_relations: bool = Field(False, alias='generateInverseRelations')
 
 
 class DataSourceTypeMeta(type):
@@ -98,8 +108,8 @@ class DataSourcePlugin(ABC, metaclass=AbstractDataSourcePluginMeta):
     def get_plugin_class(cls, ds_type_string: str) -> Type:
         return cls.subclasses.get(ds_type_string)
 
-    def get_cursor(self, name: str) -> 'DataSourceCursor':
-        return DataSourceCursor(self, name)
+    def get_cursor(self, name: str, optimization_settings: OptimizationSettings | None = None) -> 'DataSourceCursor':
+        return DataSourceCursor(self, name, optimization_settings)
 
     # @classmethod
     # def entities(cls, type: DataSourceType) -> List[Entity]:
@@ -110,15 +120,23 @@ del DataSourcePlugin.data_source_type
 
 
 class DataSourceCursor:
-    def __init__(self, plugin: DataSourcePlugin, name: str):
+    def __init__(self, plugin: DataSourcePlugin, name: str, optimization_settings: OptimizationSettings | None = None):
         self.plugin = plugin
         self.name = name
+        self.settings = OptimizationSettings() if optimization_settings is None else optimization_settings
 
     def get_strong_entities(self) -> List[Entity]:
         return self.plugin.get_strong_entities(self.name)
 
     def get_all_entities(self) -> List[Entity]:
-        return self.plugin.get_all_entities(self.name)
+        entities = self.plugin.get_all_entities(self.name)
+        if not self.settings.prevent_optimization:
+            entities = apply_schema_correction_if_available(entities, self.plugin.storage, self.name)
+            if not self.settings.prevent_automatic_optimization:
+                optimize_schema(entities)
+            if self.settings.generate_inverse_relations:
+                introduce_inverse_relations(entities)
+        return entities
 
     def get_related_entity_links(self):
         return self.plugin.get_related_entity_links(self.name)

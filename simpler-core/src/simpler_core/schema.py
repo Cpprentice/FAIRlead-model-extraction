@@ -4,13 +4,16 @@ from contextlib import suppress
 from types import NoneType
 from typing import BinaryIO, List, TextIO, Tuple, Sequence, get_origin, get_args, Any, Dict, Annotated, Union
 
+import rdflib
 import yaml
 from pydantic import BaseModel, BaseConfig, PydanticUndefinedAnnotation, create_model
 from pydantic.v1.utils import deep_update
 from pydantic_core.core_schema import ModelField
 from pydantic_partial import create_partial_model
 from pydantic_partial._compat import PydanticCompat
+from rdflib import Namespace
 
+from simpler_core.rdf import build_graph
 from simpler_core.storage import DataSourceStorage
 from simpler_model import Entity, Attribute
 
@@ -290,6 +293,7 @@ def merge_schema_lists(base_list: List, update_list: List) -> List:
 
 
 def introduce_inverse_relations(entities: List[Entity]):
+    # TODO shouldn't we model this with some kine of reasoning instead?
     entity_lookup = {
         entity.entity_name[0]: entity
         for entity in entities
@@ -340,6 +344,47 @@ def merge_schema_dicts(base_dict: Dict, update_dict: Dict) -> Dict:
         if key not in result:
             result[key] = update_value
     return result
+
+
+def optimize_schema(entities: List[Entity]):
+    # Apply certain patterns to improve detected content
+    #  This probably also works like a reasoner (that also deletes the old stuff?!)
+    graph = build_graph(entities)
+    ero = Namespace(graph.namespace_manager.store.namespace('ero'))
+
+    results = graph.query("""
+    SELECT ?entity ?entity_name ?attribute ?attribute_name
+    WHERE {
+        ?entity a ero:Entity ;
+                ero:entityName ?entity_name ;
+                ero:hasAttribute ?attribute .
+        ?attribute ero:attributeName ?attribute_name .
+    }
+    """)
+
+    combined_attribute_names = set()
+
+    for entity, entity_name, attribute, attribute_name in results:
+        # print(entity_name, attribute_name)
+        enl = entity_name.lower()
+        anl = attribute_name.lower()
+        combined_attribute_names.add(f'{enl}{anl}')
+        combined_attribute_names.add(f'{enl}_{anl}')
+        combined_attribute_names.add(f'{enl}-{anl}')
+        combined_attribute_names.add(f'{enl}.{anl}')
+
+    for entity, entity_name, attribute, attribute_name in results:
+        anl = attribute_name.lower()
+        if anl in combined_attribute_names:
+            _ = 42  # TODO this could be another relation (or at least a suggestion for one)
+
+    results = graph.query("""
+    SELECT ?attribute ?value
+    WHERE {
+        ?attribute a ero:Attribute ;
+    
+    }
+    """)
 
 
 path_separator = '$'

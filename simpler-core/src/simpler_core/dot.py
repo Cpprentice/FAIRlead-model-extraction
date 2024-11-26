@@ -71,13 +71,20 @@ def create_graph(entities: List[Entity], show_attributes=False) -> Dot:
         if entity.is_subject_in_relation is not None:
             for relation in entity.is_subject_in_relation:
                 relation_name = relation.relation_name[0]
+                if relation.inverse_relation is not None and relation.inverse_relation != f'-{relation_name}':
+                    relation_name = '\n'.join(sorted([relation_name, relation.inverse_relation]))
                 # related_entity_name = translate_name(url_to_name(relation.has_object_entity))
                 related_entity_name = translate_name(relation.has_object_entity)
                 sorted_relative_names = sorted([entity_name, related_entity_name])
                 relation_id = f'#{relation_name}#'.join(sorted_relative_names)
-                graph.add_node(Node(relation_id, label=relation_name,
-                                    shape='diamond', fillcolor='lightgrey', style='filled',
-                                    peripheries=relation_border_count(relation.has_relation_modifier)))
+
+                node = Node(relation_id, label=relation_name,
+                            shape='diamond', fillcolor='lightgrey', style='filled',
+                            peripheries=relation_border_count(relation.has_relation_modifier))
+                if graph.get_node(node.get_name()):
+                    continue
+
+                graph.add_node(node)
                 graph.add_edge(Edge(entity_name, relation_id,
                                     label=cardinality_converter(relation.subject_cardinality)))
                 graph.add_edge(Edge(related_entity_name, relation_id,
@@ -92,13 +99,16 @@ def create_graph(entities: List[Entity], show_attributes=False) -> Dot:
     return graph
 
 
-def filter_graph(graph: Dot, start_nodes: List[str], max_distance: int) -> Dot:
+def filter_graph(graph: Dot, start_nodes: List[str], max_distance: int) -> Dot | None:
     nxg = nx.drawing.nx_pydot.from_pydot(graph)
 
     nodes_within_distance = set()
     for start_node in start_nodes:
-        nxg.nodes[start_node].update({'style': 'filled', 'fillcolor': 'lightblue'})
-        nodes_within_distance.update(nx.single_source_shortest_path_length(nxg, start_node, cutoff=max_distance))
+        try:
+            nxg.nodes[start_node].update({'style': 'filled', 'fillcolor': 'lightblue'})
+            nodes_within_distance.update(nx.single_source_shortest_path_length(nxg, start_node, cutoff=max_distance))
+        except KeyError:
+            return None
 
     reduced_graph = nxg.subgraph(nodes_within_distance)
     return nx.drawing.nx_pydot.to_pydot(reduced_graph)

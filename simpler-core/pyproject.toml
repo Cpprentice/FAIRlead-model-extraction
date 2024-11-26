@@ -103,12 +103,11 @@ classifiers = [
 
 dependencies = [
   "pydot~=2.0.0",
-  "simpler_model==0.2.2",
+  "simpler_model~=0.4.0",
   "pydantic-settings~=2.6.1",
   "PyYAML~=6.0.1",
   "networkx~=3.3",
-  "owlready2~=0.46"
-#  "owlready2 @ git+https://bitbucket.org/jibalamy/owlready2@888cb034afc4c0078191711be8d54e436a4162ba"  # we need development fix for now
+  "owlready2~=0.47"
 ]
 
 [project.optional-dependencies]
