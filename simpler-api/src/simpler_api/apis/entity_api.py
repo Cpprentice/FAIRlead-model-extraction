@@ -44,11 +44,13 @@ for _, name, _ in pkgutil.iter_modules(ns_pkg.__path__, ns_pkg.__name__ + "."):
 )
 async def get_entities_by_schema(
     request: Request,
-    schemaId: str = Path(..., description="ID of schema to return"),
-    entity_prefix: str = Query('', description="", alias="EntityPrefix"),
+    schemaId: str = Path(..., description="ID of schema to access"),
+    prevent_optimization: bool = Query(False, description="", alias="preventOptimization"),
+    prevent_automatic_optimization: bool = Query(False, description="", alias="preventAutomaticOptimization"),
+    generate_inverse_relations: bool = Query(False, description="Toggles whether to generate inverse relations for each existing relation that has no schema based inverse", alias="generateInverseRelations"),
 ) -> List[Entity]:
     """desc"""
-    return BaseEntityApi.subclasses[0]().get_entities_by_schema(request, schemaId, entity_prefix)
+    return BaseEntityApi.subclasses[0]().get_entities_by_schema(request, schemaId, prevent_optimization, prevent_automatic_optimization, generate_inverse_relations)
 
 
 @router.get(
@@ -62,8 +64,11 @@ async def get_entities_by_schema(
 )
 async def get_entity_by_id(
     request: Request,
-    schemaId: str = Path(..., description="ID of schema to return"),
+    schemaId: str = Path(..., description="ID of schema to access"),
     entityId: str = Path(..., description="ID of entity to return"),
+    prevent_optimization: bool = Query(False, description="", alias="preventOptimization"),
+    prevent_automatic_optimization: bool = Query(False, description="", alias="preventAutomaticOptimization"),
+    generate_inverse_relations: bool = Query(False, description="Toggles whether to generate inverse relations for each existing relation that has no schema based inverse", alias="generateInverseRelations"),
 ) -> Entity:
     """desc"""
-    return BaseEntityApi.subclasses[0]().get_entity_by_id(request, schemaId, entityId)
+    return BaseEntityApi.subclasses[0]().get_entity_by_id(request, schemaId, entityId, prevent_optimization, prevent_automatic_optimization, generate_inverse_relations)

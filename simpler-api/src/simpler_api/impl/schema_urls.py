@@ -18,6 +18,11 @@ def introduce_api_urls_to_entity(entity: Entity, request: Request, schema_id: st
     if entity.is_object_in_relation is not None:
         for relation in entity.is_object_in_relation:
             introduce_api_urls_to_relation(relation, request, schema_id)
+    entity.entity_url = str(request.url_for(
+        'get_entity_by_id',
+        schemaId=schema_id,
+        entityId=urllib.parse.quote(entity.entity_name[0], safe='')
+    ))
 
 
 def introduce_api_urls_to_relation(relation: Relation, request: Request, schema_id: str):

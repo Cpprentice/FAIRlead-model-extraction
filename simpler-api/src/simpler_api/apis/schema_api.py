@@ -39,14 +39,17 @@ for _, name, _ in pkgutil.iter_modules(ns_pkg.__path__, ns_pkg.__name__ + "."):
         200: {"model": List[ModelSchema], "description": "successful operation"},
     },
     tags=["schema"],
-    summary="Get all avialable schemas from this API server",
+    summary="Get all available schemas from this API server",
     response_model_by_alias=True,
 )
 async def get_all_schemas(
     request: Request,
+    prevent_optimization: bool = Query(False, description="", alias="preventOptimization"),
+    prevent_automatic_optimization: bool = Query(False, description="", alias="preventAutomaticOptimization"),
+    generate_inverse_relations: bool = Query(False, description="Toggles whether to generate inverse relations for each existing relation that has no schema based inverse", alias="generateInverseRelations"),
 ) -> List[ModelSchema]:
     """desc"""
-    return BaseSchemaApi.subclasses[0]().get_all_schemas(request, )
+    return BaseSchemaApi.subclasses[0]().get_all_schemas(request, prevent_optimization, prevent_automatic_optimization, generate_inverse_relations)
 
 
 @router.get(
@@ -61,10 +64,13 @@ async def get_all_schemas(
 )
 async def get_schema_by_id(
     request: Request,
-    schemaId: str = Path(..., description="ID of schema to return"),
+    schemaId: str = Path(..., description="ID of schema to access"),
+    prevent_optimization: bool = Query(False, description="", alias="preventOptimization"),
+    prevent_automatic_optimization: bool = Query(False, description="", alias="preventAutomaticOptimization"),
+    generate_inverse_relations: bool = Query(False, description="Toggles whether to generate inverse relations for each existing relation that has no schema based inverse", alias="generateInverseRelations"),
 ) -> ModelSchema:
     """desc"""
-    return BaseSchemaApi.subclasses[0]().get_schema_by_id(request, schemaId)
+    return BaseSchemaApi.subclasses[0]().get_schema_by_id(request, schemaId, prevent_optimization, prevent_automatic_optimization, generate_inverse_relations)
 
 
 @router.get(
@@ -79,11 +85,13 @@ async def get_schema_by_id(
 )
 async def get_schema_diagram(
     request: Request,
-    schemaId: str = Path(..., description="ID of schema to return"),
+    schemaId: str = Path(..., description="ID of schema to access"),
     show_attributes: bool = Query(True, description="Toggle the rendering state of attributes", alias="showAttributes"),
     selected_entities: List[str] = Query([], description="Specify a list of highlighted entities", alias="selectedEntities"),
     render_distance: int = Query(2, description="The distance to render when using highlighted entities", alias="renderDistance"),
-    generate_inverse_relations: bool = Query(True, description="Toggles whether to generate inverse relations for each existing relation that has no schema based inverse", alias="generateInverseRelations"),
+    prevent_optimization: bool = Query(False, description="", alias="preventOptimization"),
+    prevent_automatic_optimization: bool = Query(False, description="", alias="preventAutomaticOptimization"),
+    generate_inverse_relations: bool = Query(False, description="Toggles whether to generate inverse relations for each existing relation that has no schema based inverse", alias="generateInverseRelations"),
 ) -> str:
     """desc"""
-    return BaseSchemaApi.subclasses[0]().get_schema_diagram(request, schemaId, show_attributes, selected_entities, render_distance, generate_inverse_relations)
+    return BaseSchemaApi.subclasses[0]().get_schema_diagram(request, schemaId, show_attributes, selected_entities, render_distance, prevent_optimization, prevent_automatic_optimization, generate_inverse_relations)

@@ -4,8 +4,7 @@ import pkgutil
 from fastapi import Request
 
 from simpler_api.impl.storage import get_storage
-from simpler_core.plugin import DataSourceCursor, DataSourcePlugin
-
+from simpler_core.plugin import DataSourceCursor, DataSourcePlugin, OptimizationSettings
 
 for module in pkgutil.iter_modules():
     if module.name.startswith('simpler_plugin_'):
@@ -18,4 +17,4 @@ def get_cursor(request: Request, name: str) -> DataSourceCursor:
     plugin_name = storage.get_plugin_name(name)
     class_ = DataSourcePlugin.get_plugin_class(plugin_name)
     plugin = class_(storage, lambda *args, **kwargs: str(request.url_for(*args, **kwargs)))
-    return plugin.get_cursor(name)
+    return plugin.get_cursor(name, OptimizationSettings(**request.query_params))

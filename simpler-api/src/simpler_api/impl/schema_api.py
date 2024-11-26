@@ -6,6 +6,7 @@ import pydot
 
 from simpler_api.impl.plugins import get_cursor
 from simpler_api.apis.schema_api_base import BaseSchemaApi
+from simpler_api.impl.response import wrap_response_according_to_accept_header
 from simpler_api.impl.storage import get_storage
 from simpler_api.models.model_schema import ModelSchema
 from simpler_core.dot import create_graph, filter_graph
@@ -14,8 +15,11 @@ from simpler_core.schema import apply_schema_correction_if_available, introduce_
 
 class SchemaApi(BaseSchemaApi):
     def get_all_schemas(
-        self,
-        request: Request,
+            self,
+            request: Request,
+            prevent_optimization: bool,
+            prevent_automatic_optimization: bool,
+            generate_inverse_relations: bool,
     ) -> List[ModelSchema]:
         storage = get_storage()
         return [
@@ -27,26 +31,31 @@ class SchemaApi(BaseSchemaApi):
         ]
 
     def get_schema_by_id(
-        self,
-        request: Request,
-        schemaId: str,
+            self,
+            request: Request,
+            schemaId: str,
+            prevent_optimization: bool,
+            prevent_automatic_optimization: bool,
+            generate_inverse_relations: bool,
     ) -> ModelSchema:
         storage = get_storage()
         for data_name in storage.list_available_data():
             if data_name == schemaId:
-                return ModelSchema(
+                return wrap_response_according_to_accept_header(request, ModelSchema(
                     id=data_name
-                )
+                ))
         raise HTTPException(status_code=404, detail="Schema not found")
 
     def get_schema_diagram(
-        self,
-        request: Request,
-        schemaId: str,
-        show_attributes: bool,
-        selected_entities: List[str],
-        render_distance: int,
-        generate_inverse_relations: bool,
+            self,
+            request: Request,
+            schemaId: str,
+            show_attributes: bool,
+            selected_entities: List[str],
+            render_distance: int,
+            prevent_optimization: bool,
+            prevent_automatic_optimization: bool,
+            generate_inverse_relations: bool,
     ) -> str:
         try:
             # we should be able to directly get a cursor here based on the schema Id - if not we issue a 404
@@ -56,16 +65,13 @@ class SchemaApi(BaseSchemaApi):
 
         entities = cursor.get_all_entities()
 
-        entities = apply_schema_correction_if_available(entities, get_storage(), schemaId)
-        if generate_inverse_relations:
-            introduce_inverse_relations(entities)
-
         graph = create_graph(entities, show_attributes)
         if len(selected_entities) > 0:
             graph = filter_graph(graph, selected_entities, render_distance)
+            if graph is None:
+                raise HTTPException(status_code=400, detail='Selected Filtering entity does not exist')
 
         requested_data_type = request.headers['accept']
         if requested_data_type == 'image/svg+xml':
             return Response(graph.create(prog=['dot', '-Kfdp'], format='svg'), media_type='image/svg+xml')
-            # return graph.create(format='svg')
         return Response(graph.to_string(), media_type='text/plain')

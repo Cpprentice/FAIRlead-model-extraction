@@ -16,7 +16,9 @@ class BaseEntityApi:
         self,
         request: Request,
         schemaId: str,
-        entity_prefix: str,
+        prevent_optimization: bool,
+        prevent_automatic_optimization: bool,
+        generate_inverse_relations: bool,
     ) -> List[Entity]:
         """desc"""
         ...
@@ -27,6 +29,9 @@ class BaseEntityApi:
         request: Request,
         schemaId: str,
         entityId: str,
+        prevent_optimization: bool,
+        prevent_automatic_optimization: bool,
+        generate_inverse_relations: bool,
     ) -> Entity:
         """desc"""
         ...

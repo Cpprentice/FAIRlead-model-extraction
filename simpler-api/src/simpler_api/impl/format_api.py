@@ -7,6 +7,7 @@ from simpler_api.apis.format_api_base import BaseFormatApi
 from simpler_api.models.format import Format
 from simpler_core.plugin import DataSourceCursor, DataSourcePlugin
 
+
 class FormatApi(BaseFormatApi):
     def get_all_formats(
         self,

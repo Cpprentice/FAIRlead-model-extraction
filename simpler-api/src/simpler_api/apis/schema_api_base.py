@@ -15,6 +15,9 @@ class BaseSchemaApi:
     def get_all_schemas(
         self,
         request: Request,
+        prevent_optimization: bool,
+        prevent_automatic_optimization: bool,
+        generate_inverse_relations: bool,
     ) -> List[ModelSchema]:
         """desc"""
         ...
@@ -24,6 +27,9 @@ class BaseSchemaApi:
         self,
         request: Request,
         schemaId: str,
+        prevent_optimization: bool,
+        prevent_automatic_optimization: bool,
+        generate_inverse_relations: bool,
     ) -> ModelSchema:
         """desc"""
         ...
@@ -36,6 +42,8 @@ class BaseSchemaApi:
         show_attributes: bool,
         selected_entities: List[str],
         render_distance: int,
+        prevent_optimization: bool,
+        prevent_automatic_optimization: bool,
         generate_inverse_relations: bool,
     ) -> str:
         """desc"""
