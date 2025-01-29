@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import List, Callable
 
 from simpler_core.dot import create_graph, filter_graph
-from simpler_core.plugin import DataSourcePlugin, DataSourceCursor, DataSourceType
+from simpler_core.plugin import DataSourcePlugin, DataSourceCursor, DataSourceType, OptimizationSettings
 from simpler_core.schema import serialize_entity_list_to_yaml, load_external_schema_from_yaml, extend_schema_from_yaml, \
     apply_schema_correction_if_available, introduce_inverse_relations
 from simpler_core.storage import ManualFilesystemDataSourceStorage
@@ -16,7 +16,7 @@ from simpler_core.storage import ManualFilesystemDataSourceStorage
 def get_arg_parser(plugins: List[DataSourceType]) -> ArgumentParser:
     plugin_names = [p.name for p in plugins]
     parser = ArgumentParser(prog='simpler-cli')
-    sub_commands = parser.add_subparsers(dest='command')
+    sub_commands = parser.add_subparsers(dest='command', required=True)
     extract_command_parser = ecp = sub_commands.add_parser('extract')
     ecp.add_argument('-p', '--plugin', required=True, help='The plugin to use to extract schema data',
                      choices=plugin_names)
@@ -28,10 +28,14 @@ def get_arg_parser(plugins: List[DataSourceType]) -> ArgumentParser:
                      help='Specify a list of entities the diagram shall show up plus up to "distance" neighbors')
     ecp.add_argument('--distance', metavar='<int>', type=int, default=2,
                      help='Rendering distance for DOT only used with --select-entity')
-    ecp.add_argument('--dont-generate-inverse-relations', type=bool, default=False,
-                     help='Disable the automatic generation of inverse relations')
+    ecp.add_argument('--generate-inverse-relations', type=bool, default=False,
+                     help='Enable the automatic generation of inverse relations')
     ecp.add_argument('--hide-arguments', type=bool, default=False,
                      help='Flag to prevent argument rendering')
+    ecp.add_argument('--prevent-optimization', type=bool, default=False,
+                     help='Flag to disable application of optimizations')
+    ecp.add_argument('--prevent-automatic-optimization', type=bool, default=False,
+                     help='Flag to disable application of automatic optimizations')
 
     schema_merge_command_parser = smcp = sub_commands.add_parser('schema')
     smcp.add_argument('base_schema_file', metavar='<base-schema-file>', help='A full spec file')
@@ -105,14 +109,14 @@ def extract_command(args: Namespace, parser: ArgumentParser):
         })
     })
     plugin = class_(storage, lambda *args, **kwargs: 'file:///blub')
-    cursor: DataSourceCursor = plugin.get_cursor('cli')
+    optimization_settings = OptimizationSettings(
+        prevent_optimization=args.prevent_optimization,
+        prevent_automatic_optimization=args.prevent_automatic_optimization,
+        generate_inverse_relations=args.generate_inverse_relations
+    )
+    cursor: DataSourceCursor = plugin.get_cursor('cli', optimization_settings)
 
     entities = cursor.get_all_entities()
-
-    entities = apply_schema_correction_if_available(entities, storage, 'cli')
-
-    if not args.dont_generate_inverse_relations:
-        introduce_inverse_relations(entities)
 
     output_string = ''
 
