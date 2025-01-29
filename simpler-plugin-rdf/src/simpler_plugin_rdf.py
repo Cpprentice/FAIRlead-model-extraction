@@ -5,9 +5,11 @@ import io
 import shutil
 from contextlib import ExitStack
 from pathlib import Path
-from tempfile import TemporaryFile, NamedTemporaryFile
+from tempfile import TemporaryFile, NamedTemporaryFile, TemporaryDirectory
 from typing import List, Dict
+from zipfile import ZipFile
 
+from owlready2 import onto_path, World, PREDEFINED_ONTOLOGIES
 from rdflib import Graph, RDF, OWL, RDFS
 
 from simpler_core.cardinality import create_cardinality
@@ -184,7 +186,8 @@ class OwlDataSourceType(DataSourceType):
     inputs = [
         'ontology',
         'ontology_extension',
-        'data'
+        'data',
+        'imports'
     ]
 
 
@@ -221,8 +224,19 @@ class OwlDataSourcePlugin(DataSourcePlugin):
         #             ontology = get_ontology(base_url).load(fileobj=ontology_file)
 
         # return
+        world = World()
+        with self.storage.get_data(name) as stream_lookup, TemporaryDirectory() as import_directory:
+            if 'imports' in stream_lookup:
+                with ZipFile(stream_lookup['imports']) as import_zip:
+                    import_zip.extractall(import_directory)
+                # onto_path.append(import_directory)
 
-        with self.storage.get_data(name) as stream_lookup:
+                for import_ontology_path in Path(import_directory).glob('*.ttl'):
+                    with open(import_ontology_path, 'rb') as onto_stream:
+                        with make_n_triples_stream(onto_stream) as triples_stream:
+                            ontology = world.get_ontology('temp').load(fileobj=triples_stream, only_local=True)
+                    PREDEFINED_ONTOLOGIES[ontology.base_iri] = ontology
+
             streams_to_load = {'ontology', 'ontology_extension'} & set(stream_lookup.keys())
             with ExitStack() as stack:
                 streams = [
@@ -234,7 +248,7 @@ class OwlDataSourcePlugin(DataSourcePlugin):
                     for stream in streams
                 ]
                 classes, object_properties, data_properties, world, ontologies = \
-                    extract_ontology_concepts(streams_with_url)
+                    extract_ontology_concepts(streams_with_url, world)
 
             # if 'ontology' in stream_lookup:
             #     with make_n_triples_stream(stream_lookup['ontology']) as n_triples_stream:
@@ -389,7 +403,7 @@ class OwlDataSourcePlugin(DataSourcePlugin):
         pass
 
     def get_all_entities(self, name: str) -> List[Entity]:
-        entity_lookup = self._get_entity_dict(name, only_include_if_data_exists=True)
+        entity_lookup = self._get_entity_dict(name, only_include_if_data_exists=False)
         return [
             entity
             for entity_list in entity_lookup.values()

@@ -43,17 +43,17 @@ def build_iterative_class_list(ontology: Ontology | World) -> List[ThingClass]:
     return list(class_set)
 
 
-def extract_ontology_concepts(n_triples_streams: List[Tuple[IO, str]]) -> Tuple[
+def extract_ontology_concepts(n_triples_streams: List[Tuple[IO, str]], world: World | None = None) -> Tuple[
     List[ThingClass],
     List[ObjectPropertyClass],
     List[DataPropertyClass],
     World,
     List[Ontology]
 ]:
-    world = World()
+    world = World() if world is None else world
     ontologies = []
     for n_triples_stream, ontology_base_url in n_triples_streams:
-        ontologies.append(world.get_ontology(ontology_base_url).load(fileobj=n_triples_stream))
+        ontologies.append(world.get_ontology(ontology_base_url).load(fileobj=n_triples_stream, only_local=True))
 
     sync_reasoner_pellet(world)
 
@@ -295,6 +295,14 @@ def build_owl(entities: List[Entity], base_url: str) -> str:
                     g.add((restriction, OWL.maxQualifiedCardinality, Literal(1)))
 
     return g.serialize(format='turtle', encoding='utf-8').decode('utf-8')
+
+
+def get_namespace(g: Graph, namespace: str) -> Namespace:
+    return Namespace(g.namespace_manager.store.namespace(namespace))
+
+
+def inject_namespace_getter(g: Graph):
+    setattr(g, 'get_namespace', lambda namespace: get_namespace(g, namespace))
 
 
 # def main():
