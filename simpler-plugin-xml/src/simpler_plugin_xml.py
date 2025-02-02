@@ -14,7 +14,7 @@ from xmlschema.validators import (XsdComplexType, XsdUnique, XsdKey, XsdKeyref, 
                                   XsdAtomicRestriction, XsdAtomicBuiltin)
 
 from simpler_core.cardinality import create_cardinality
-from simpler_core.plugin import DataSourcePlugin, DataSourceType, InputDataError
+from simpler_core.plugin import DataSourcePlugin, DataSourceType, InputDataError, InputFlag
 from simpler_core.schema import make_hierarchical_name, is_hierarchical_path, split_prefix_and_item_name, \
     path_separator, convert_path_separator
 
@@ -363,7 +363,13 @@ def group_by(
 
 class XmlDataSourceType(DataSourceType):
     name = 'XML'
-    inputs = ['data', 'xsd', 'dtd', 'xsd_extra', 'custom_spec']
+    inputs = [
+        ('data', InputFlag.TEXT),
+        ('xsd', InputFlag.TEXT),
+        ('dtd', InputFlag.TEXT),
+        ('xsd_extra', InputFlag.BINARY),
+        # ('custom_spec', InputFlag.TEXT)
+    ]
 
 
 class XmlDataSourcePlugin(DataSourcePlugin):

@@ -3,16 +3,20 @@ import collections
 import functools
 import itertools
 import sys
+from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from dataclasses import dataclass
+from types import SimpleNamespace
 from typing import List, Dict, Set
 
-from sqlalchemy import create_engine, Connection, text
+from sqlalchemy import create_engine, Connection, text, MetaData, ForeignKey as SqlForeignKey, Column as SqlColumn
+from sqlalchemy.orm import declarative_base
 
 from simpler_core.cardinality import create_cardinality, merge_cardinalities
-from simpler_core.plugin import DataSourcePlugin, DataSourceType
+from simpler_core.plugin import DataSourcePlugin, DataSourceType, InputFlag
+
 try:
-    from simpler_model import Attribute, Relation, Entity, EntityModifier, RelationModifier
+    from simpler_model import Attribute, Relation, Entity, EntityModifier, RelationModifier, AttributeModifier
 
     EntityLink = Relation
 except ImportError:
@@ -76,7 +80,7 @@ class ForeignKey:
     constraint_name: str
     fk_column: str
     nullable: bool
-    no: int
+    no: int  # TODO remove this
     primary_table: str
     pk_column: str
     column_count: int = None
@@ -146,12 +150,287 @@ order by kcu.table_schema,
 
 class SqlDataSourceType(DataSourceType):
     name = 'SQL'
-    inputs = ['connector']
+    inputs = [('connector', InputFlag.TEXT | InputFlag.SECURE)]
 
 
-class SqlDataSourcePlugin(DataSourcePlugin):
+class SqliteDataSourceType(DataSourceType):
+    name = 'Sqlite'
+    inputs = [('database', InputFlag.BINARY)]
+
+
+class BaseSqlDataSourcePlugin(DataSourcePlugin):
+    data_source_type = None
+
+    @abstractmethod
+    @contextmanager
+    def get_sql_cursor(self, name) -> Connection: ...
+
+    def get_metadata(self, name: str) -> MetaData:
+        base = declarative_base()
+        metadata = base.metadata
+        with self.get_sql_cursor(name) as cursor:
+            metadata.reflect(cursor)
+        return metadata
+
+    @staticmethod
+    def _get_table_names(metadata: MetaData) -> List[str]:
+        return list(metadata.tables.keys())
+
+    @staticmethod
+    def _get_foreign_key_objects(metadata: MetaData) -> List[ForeignKey]:
+        native_foreign_keys = [
+            fk
+            for table in metadata.tables.values()
+            for fk in table.foreign_keys
+        ]
+
+        constraint_set = set(fk.constraint for fk in native_foreign_keys)
+        constraint_name_lookup = {
+            constraint: f'constraint_{num + 1}'
+            for num, constraint in enumerate(constraint_set)
+        }
+
+        foreign_keys = [
+            ForeignKey(
+                foreign_table=fk.parent.table.name,
+                constraint_name=fk.name if fk.name is not None else constraint_name_lookup[fk.constraint],
+                fk_column=fk.parent.name,
+                nullable=fk.column.nullable,
+                no=0,
+                primary_table=fk.column.table.name,
+                pk_column=fk.column.name,
+                column_count=len(fk.constraint.columns)
+            )
+            for fk in native_foreign_keys
+        ]
+        return foreign_keys
+
+    @staticmethod
+    def _recurse_key_circles(column: str, lookup: Dict[str, List[str]], visited=None) -> List[List[str]]:
+        if visited is None:
+            visited = []
+
+        if column in visited:
+            return [[*visited, column]]
+        visited.append(column)
+
+        next_paths = []
+        if column in lookup:
+            next_columns = lookup[column]
+            next_paths.extend([
+                inner_path
+                for next_column in next_columns
+                for inner_path in BaseSqlDataSourcePlugin._recurse_key_circles(next_column, lookup, visited.copy())
+            ])
+        return next_paths
+
+    @staticmethod
+    def _determine_foreign_key_circles(foreign_keys: List[ForeignKey]) -> List[List[ForeignKey]]:
+        relation_lookup = collections.defaultdict(list)
+
+        # we take a step back to table/column pairs and their linking first to avoid
+        #  n^2 iterations over all foreign keys
+        for fk in foreign_keys:
+            relation_lookup[fk.source].append(fk.target)
+
+        paths: Dict[str, List[List[str]]] = {}  # these are the paths based on each table/column pair
+        for key in relation_lookup.keys():
+            paths[key] = BaseSqlDataSourcePlugin._recurse_key_circles(key, relation_lookup)
+
+        visited = set()
+        circles = []
+        for path_list in paths.values():
+            for path in path_list:
+                circle_string = '->'.join(path[path.index(path[-1]):])
+                if circle_string not in visited:
+                    visited.add(circle_string)
+                    circles.append(path[path.index(path[-1]):])
+
+        circle_fk_objs = []
+        for circle in circles:
+            fk_chain = []
+            for from_path, to_path in itertools.pairwise(circle):
+                from_table, from_column = from_path.rsplit('.', maxsplit=1)
+                to_table, to_column = to_path.rsplit('.', maxsplit=1)
+
+                applicable_foreign_key = list(filter(
+                    lambda x: x.foreign_table == from_table and x.fk_column == from_column and
+                              x.primary_table == to_table and x.pk_column == to_column,
+                    foreign_keys
+                ))[0]
+                fk_chain.append(applicable_foreign_key)
+
+            circle_fk_objs.append(fk_chain)
+        return circle_fk_objs
+
+    @staticmethod
+    def _get_attribute_lookup(metadata: MetaData) -> Dict[str, List[Attribute]]:
+
+        # result = cursor.execute(columns_query)
+        attribute_lookup = collections.defaultdict(list)
+
+        for table in metadata.tables.values():
+            for column in table.columns:
+                attribute_lookup[column.table.name].append(Attribute(
+                    attribute_name=[column.name],
+                    has_attribute_modifier=None
+                        if not column.primary_key
+                        else [AttributeModifier(attribute_modifier='key')],
+                    # TODO Should we consider unique constraints as well?
+                ))
+        return attribute_lookup
+
+    @staticmethod
+    def _get_foreign_keys_that_apply_to_determining_entity_weakness(foreign_keys: List[ForeignKey]) -> List[ForeignKey]:
+        ignorable_fks: Set[ForeignKey] = set()
+
+        # Handle foreign key circles
+        foreign_key_chains = BaseSqlDataSourcePlugin._determine_foreign_key_circles(foreign_keys)
+        for circle in foreign_key_chains:
+            highest_column_count_fk: ForeignKey | None = functools.reduce(
+                lambda acc, x: x if acc is None or x.column_count > acc.column_count else acc,
+                circle,
+                None
+            )
+            ignorable_fks.add(highest_column_count_fk)
+
+        filtered_foreign_key_objects = []
+        for a in foreign_keys:
+            found = False
+            for b in ignorable_fks:
+                if a.constraint_name == b.constraint_name:
+                    found = True
+                    break
+            if not found and a.nullable is False:
+                filtered_foreign_key_objects.append(a)
+
+        return filtered_foreign_key_objects
+
+    def get_strong_entities(self, name: str) -> List[Entity]:
+        pass
+
+    def get_all_entities(self, name: str) -> List[Entity]:
+        metadata = self.get_metadata(name)
+        with (self.get_sql_cursor(name) as cursor):
+
+            table_names = self._get_table_names(metadata)
+            foreign_key_objects = self._get_foreign_key_objects(metadata)
+            filtered_foreign_key_objects = \
+                self._get_foreign_keys_that_apply_to_determining_entity_weakness(foreign_key_objects)
+            attribute_lookup = self._get_attribute_lookup(metadata)
+
+            grouped_foreign_keys = collections.defaultdict(list)
+            for f_key in filtered_foreign_key_objects:
+                grouped_foreign_keys[f_key.constraint_name].append(f_key)
+
+            cardinalities = {
+                (fk.source, fk.target): (0, 1) if any(x.nullable for x in group) else (1, 1)
+                for constraint_name, group in grouped_foreign_keys.items()
+                for fk in group
+            }
+            added_transitives = {1}
+            while added_transitives:
+                added_transitives = set()
+                for (source, target), cardinality in cardinalities.items():
+                    for (inner_source, inner_target), inner_cardinality in cardinalities.items():
+                        if target == inner_source and (source, inner_target) not in cardinalities:
+                            added_transitives.add((
+                                (source, inner_target),
+                                merge_cardinalities(cardinality, inner_cardinality)
+                            ))
+                for key, value in added_transitives:
+                    cardinalities[key] = value
+            grouped_cardinalities = collections.defaultdict(list)
+            for (source, target), cardinality in cardinalities.items():
+                source_table_name, _ = source.rsplit('.', maxsplit=1)
+                target_table_name, _ = target.rsplit('.', maxsplit=1)
+                grouped_cardinalities[(source_table_name, target_table_name)].append(cardinality)
+            cardinality_implications = {
+                key: functools.reduce(merge_cardinalities, cardinality_list, cardinality_list[0])
+                for key, cardinality_list in grouped_cardinalities.items()
+            }
+
+            entities = []
+            for table_name in table_names:
+                name_set = set()
+                short_name = table_name.replace('public.', '')
+                relations = []
+
+                for foreign_key in foreign_key_objects:
+                    # if foreign_key.primary_table == table_name:
+                    if foreign_key.foreign_table == table_name:
+                        # fk_short_name = foreign_key.foreign_table.replace('public.', '')
+                        fk_short_name = foreign_key.primary_table.replace('public.', '')
+
+                        if fk_short_name not in name_set:
+                            name_set.add(fk_short_name)
+
+                            subject_cardinality = create_cardinality((0, sys.maxsize))
+                            if (foreign_key.primary_table, table_name) in cardinality_implications:
+                                subject_cardinality = create_cardinality(
+                                    cardinality_implications[(foreign_key.primary_table, table_name)])
+
+                            relations.append(
+                                Relation(
+                                    relation_name=[foreign_key.constraint_name],
+                                    has_object_entity=fk_short_name,
+                                    has_subject_entity=short_name,
+                                    object_cardinality=create_cardinality((0, 1) if
+                                                                          foreign_key.nullable else (1, 1)),
+                                    subject_cardinality=subject_cardinality,
+                                    has_attribute=[],
+                                    has_relation_modifier=[RelationModifier(relation_modifier='identifying')]
+                                    if foreign_key in filtered_foreign_key_objects else None
+                                )
+                            )
+                is_weak = any(foreign_key.foreign_table == table_name for foreign_key in filtered_foreign_key_objects)
+                # is_weak = any(foreign_key.primary_table == table_name for foreign_key in filtered_foreign_key_objects)
+                entities.append(Entity(
+                    entity_name=[short_name],
+                    has_attribute=attribute_lookup[table_name],
+                    has_entity_modifier=None if not is_weak else [EntityModifier(entity_modifier='weak')],
+                    is_object_in_relation=[],
+                    is_subject_in_relation=relations
+                ))
+        return entities
+
+    def get_related_entity_links(self, name: str) -> List[EntityLink]:
+        pass
+
+    def get_entity_by_id(self, name: str, entity_id: str) -> Entity:
+        all_entities = self.get_all_entities(name)
+        for entity in all_entities:
+            if entity.name == entity_id:
+                return entity
+        raise KeyError()
+
+
+class SqliteDataSourcePlugin(BaseSqlDataSourcePlugin):
+    data_source_type = SqliteDataSourceType()
+
+    @contextmanager
+    def get_sql_cursor(self, name: str) -> Connection:
+        engine = create_engine(f'sqlite{self.storage.get_file_path(name, 'database').absolute().as_uri()[4:]}')
+        with engine.connect() as cursor:
+            yield cursor
+
+
+class SqlDataSourcePlugin(BaseSqlDataSourcePlugin):
+    @contextmanager
+    def get_sql_cursor(self, name) -> Connection:
+        with self.storage.get_data(name) as data_lookup:
+            connector_stream = codecs.getreader('utf-8')(data_lookup['connector'])
+            connector_string = connector_stream.read()
+        engine = create_engine(connector_string)
+        with engine.connect() as cursor:
+            yield cursor
 
     data_source_type = SqlDataSourceType()
+
+
+class OldSqlDataSourcePlugin(DataSourcePlugin):
+
+    data_source_type = None  # SimpleNamespace(name='deprecated')
 
     @contextmanager
     def get_sql_cursor(self, name: str) -> Connection:

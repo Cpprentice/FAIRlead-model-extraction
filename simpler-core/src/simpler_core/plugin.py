@@ -1,6 +1,7 @@
 from abc import abstractmethod, ABC, ABCMeta
 import re
 from dataclasses import dataclass
+from enum import IntFlag
 from typing import ClassVar, List, Tuple, Type, Dict, Callable
 
 from pydantic import BaseModel, Field
@@ -29,12 +30,28 @@ class DataSourceTypeMeta(type):
         return super().__new__(cls, name, bases, attrs)
 
 
+class DataSourceTypeInputFlag(IntFlag):
+    BINARY = 0
+    TEXT = 1
+    SECURE = 2
+    SHOW_IN_JSON = 4
+
+    def __str__(self) -> str:
+        return self.name
+        # is_binary = not (self.value & 1)
+        # binary_prefix = 'BINARY|' if is_binary else ''
+        # return f'{binary_prefix}{self.name}'
+
+
+InputFlag = DataSourceTypeInputFlag
+
+
 class DataSourceType(metaclass=DataSourceTypeMeta):
     name: str = None
-    inputs: List[str] = []
+    inputs: List[tuple[str, int]] = []
     input_validation_statement: str = None
 
-    def validate_inputs(self, input_names: List[str]) -> bool:
+    def validate_inputs(self, input_names: List[str]) -> bool:  # For now this is not reflecting the "inputs" type
         if self.input_validation_statement is None:
             return True
         input_name_string = ','.join(sorted(input_names))
@@ -72,17 +89,18 @@ class AbstractDataSourcePluginMeta(DataSourcePluginMeta, ABCMeta):
 
 
 class DataSourcePlugin(ABC, metaclass=AbstractDataSourcePluginMeta):
-    subclasses: Dict[str, Type] = {}
+    subclasses: Dict[str, type['DataSourcePlugin']] = {}
 
     data_source_type: DataSourceType = None
 
-    def __init__(self, storage: DataSourceStorage, url_factory: Callable[[str, ...], str]):
+    def __init__(self, storage: DataSourceStorage):  # url_factory: Callable[[str, ...], str]
         self.storage = storage
-        self.url_factory = url_factory
+        # self.url_factory = url_factory
 
     def __init_subclass__(cls, **kwargs) -> None:
         super().__init_subclass__(**kwargs)
-        DataSourcePlugin.subclasses[cls.data_source_type.name] = cls
+        if cls.data_source_type is not None:
+            DataSourcePlugin.subclasses[cls.data_source_type.name] = cls
 
     @abstractmethod
     def get_strong_entities(self, name: str) -> List[Entity]:
@@ -105,7 +123,7 @@ class DataSourcePlugin(ABC, metaclass=AbstractDataSourcePluginMeta):
         return [plugin_class.data_source_type for plugin_class in cls.subclasses.values()]
 
     @classmethod
-    def get_plugin_class(cls, ds_type_string: str) -> Type:
+    def get_plugin_class(cls, ds_type_string: str) -> type['DataSourcePlugin']:
         return cls.subclasses.get(ds_type_string)
 
     def get_cursor(self, name: str, optimization_settings: OptimizationSettings | None = None) -> 'DataSourceCursor':

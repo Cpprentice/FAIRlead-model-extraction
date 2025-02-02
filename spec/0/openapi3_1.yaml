@@ -10,7 +10,7 @@ info:
   license:
     name: MIT
     identifier: MIT
-  version: 0.4.0
+  version: 0.5.0
 externalDocs:
   description: Find out more about Swagger
   url: http://swagger.io
@@ -32,6 +32,136 @@ tags:
   - name: format
     description: A file format supported by the schema API
 paths:
+  /data-sources:
+    get:
+      tags:
+        - data-source
+      summary: Get meta information about all registered data sources
+      description: desc
+      operationId: getAllDataSourceMeta
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DataSource'
+            application/x-yaml:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DataSource'
+            application/xml:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DataSource'
+                xml:
+                  name: data-sources
+    post:
+      tags:
+        - data-source
+      summary: Insert a new data source meta record
+      description: desc
+      operationId: addDataSourceMeta
+      requestBody:
+        description: specification of data source meta record
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataSource'
+          application/x-yaml:
+            schema:
+              $ref: '#/components/schemas/DataSource'
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/DataSource'
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataSource'
+            application/x-yaml:
+              schema:
+                $ref: '#/components/schemas/DataSource'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/DataSource'
+        '400':
+          description: Bad request
+  /data-sources/{dataSourceId}:
+    get:
+      tags:
+        - data-source
+      summary: Get meta information about a specified data sources
+      description: desc
+      operationId: getDataSourceMeta
+      parameters:
+        - $ref: '#/components/parameters/dataSourceId'
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DataSource'
+            application/x-yaml:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DataSource'
+            application/xml:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DataSource'
+                xml:
+                  name: data-sources
+  /data-sources/{dataSourceId}/{pluginInputField}:
+    get:
+      tags:
+        - data-source
+      summary: Get content of a specified data sources
+      description: desc
+      operationId: getDataSourceContent
+      parameters:
+        - $ref: '#/components/parameters/dataSourceId'
+        - $ref: '#/components/parameters/pluginInputField'
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+    post:
+      tags:
+        - data-source
+      summary: Upload the content of a specified data source
+      description: desc
+      operationId: uploadDataSourceContent
+      parameters:
+        - $ref: '#/components/parameters/dataSourceId'
+        - $ref: '#/components/parameters/pluginInputField'
+      # requestBody:
+        # description: blob of specified field
+        # required: true
+        # content:
+          # application/octet-stream:
+            # schema:
+            #   type: string
+            #   format: binary
+      responses:
+        '200':
+            description: successful operation
   /formats:
     get:
       tags:
@@ -232,6 +362,18 @@ paths:
               
 components:
   parameters:
+    dataSourceId:
+      name: dataSourceId
+      in: path
+      schema:
+        type: string
+      required: true
+    pluginInputField:
+      name: pluginInputField
+      in: path
+      schema:
+        type: string
+      required: true
     EntityPrefix:
       name: EntityPrefix
       in: query
@@ -309,7 +451,35 @@ components:
     #   xml:
     #     name: relation-modifier
     
-    
+
+    DataSource:
+      type: object
+      properties:
+        id:
+          type: string
+        description:
+          type: string
+        plugin:
+          type: string
+        populated_input_fields:  # TODO can we enforce this as read-only
+          type: array
+          items:
+            type: string
+        text_data:
+          type: array
+          items:
+            type: object
+            properties:
+              input_field:
+                type: string
+              value:
+                type: string
+            required:
+              - input_field
+              - value
+      required:
+        - id
+        - plugin
 
     EntityLink:
       type: string

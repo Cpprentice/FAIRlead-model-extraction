@@ -5,7 +5,7 @@ from datamodel_code_generator import DataModelType, PythonVersion
 from datamodel_code_generator.model import get_data_model_types
 
 from simpler_core.cardinality import create_cardinality
-from simpler_core.plugin import DataSourceType, DataSourcePlugin, EntityLink
+from simpler_core.plugin import DataSourceType, DataSourcePlugin, EntityLink, InputFlag
 from simpler_model import Entity, Attribute, Relation, EntityModifier
 from simpler_plugin_json import JSONDataSourcePlugin
 
@@ -13,8 +13,8 @@ from simpler_plugin_json import JSONDataSourcePlugin
 class OpenApiDataSourceType(DataSourceType):
     name = 'OpenAPI'
     inputs = [
-        'spec_file',
-        'spec_url'
+        ('spec_file', InputFlag.TEXT),
+        ('spec_url', InputFlag.TEXT | InputFlag.SHOW_IN_JSON)
     ]
     input_validation_statement = r'(spec_file|spec_url)'
 
@@ -128,7 +128,7 @@ class OpenApiDataSourcePlugin(DataSourcePlugin):
 class WsdlDataSourceType(DataSourceType):
     name = 'WSDL'
     inputs = [
-        'spec'
+        ('spec', InputFlag.BINARY)
     ]
     input_validation_statement = r'spec'
 

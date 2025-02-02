@@ -13,7 +13,7 @@ from owlready2 import onto_path, World, PREDEFINED_ONTOLOGIES
 from rdflib import Graph, RDF, OWL, RDFS
 
 from simpler_core.cardinality import create_cardinality
-from simpler_core.plugin import DataSourcePlugin, DataSourceType
+from simpler_core.plugin import DataSourcePlugin, DataSourceType, InputFlag
 from simpler_core.rdf import (extract_ontology_concepts, make_n_triples_stream, get_cardinality_restrictions,
                               build_cardinality, merge_cardinalities, stringify_cardinality)
 
@@ -177,17 +177,17 @@ WHERE {
 class SparqlDataSourceType(DataSourceType):
     name = 'SPARQL'
     inputs = [
-        'connector'
+        ('connector', InputFlag.TEXT | InputFlag.SECURE)
     ]
 
 
 class OwlDataSourceType(DataSourceType):
     name = 'OWL'
     inputs = [
-        'ontology',
-        'ontology_extension',
-        'data',
-        'imports'
+        ('ontology', InputFlag.TEXT),
+        ('ontology_extension', InputFlag.TEXT),
+        ('data', InputFlag.TEXT),
+        ('imports', InputFlag.BINARY)
     ]
 
 

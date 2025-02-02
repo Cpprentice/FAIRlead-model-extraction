@@ -8,6 +8,9 @@ from fastapi import Request
 {{/imports}}
 {{#securityImports.0}}from {{packageName}}.security_api import {{#securityImports}}get_token_{{.}}{{^-last}}, {{/-last}}{{/securityImports}}{{/securityImports.0}}
 
+file = bytes
+
+
 class Base{{classname}}:
     subclasses: ClassVar[Tuple] = ()
 

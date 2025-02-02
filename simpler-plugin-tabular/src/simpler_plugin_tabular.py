@@ -12,7 +12,7 @@ import yaml
 from openpyxl.worksheet.table import Table
 from openpyxl.worksheet.worksheet import Worksheet
 
-from simpler_core.plugin import DataSourcePlugin, DataSourceType, EntityLink
+from simpler_core.plugin import DataSourcePlugin, DataSourceType, EntityLink, InputFlag
 from simpler_core.schema import load_external_schema_from_yaml
 from simpler_model import Entity, Relation, Attribute
 from simpler_plugin_json import JSONDataSourcePlugin
@@ -21,8 +21,8 @@ from simpler_plugin_json import JSONDataSourcePlugin
 class TabularDataSourceType(DataSourceType):
     name = 'Tabular'
     inputs = [
-        'data_no_header',  # A zip file containing all partial CSV files
-        'data_header',     # A zip file containing all partial CSV files
+        ('data_no_header', InputFlag.BINARY),  # A zip file containing all partial CSV files
+        ('data_header', InputFlag.BINARY),     # A zip file containing all partial CSV files
         # 'schema'
     ]
     input_validation_statement = r'(data_header.*|data_no_header.*)'
@@ -220,8 +220,8 @@ class ExcelTableDefinition:
 class ExcelDataSourceType(DataSourceType):
     name = 'Excel'
     inputs = [
-        'workbook.xlsx',  # The XLSX Document
-        'table_def.yaml'
+        ('workbook.xlsx', InputFlag.BINARY),  # The XLSX Document
+        ('table_def.yaml', InputFlag.TEXT)
     ]
     input_validation_statement = r'.*workbook\.xlsx'
 

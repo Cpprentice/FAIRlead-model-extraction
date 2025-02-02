@@ -27,6 +27,10 @@ class DataSourceStorage(ABC):
     def list_available_data(self) -> List[str]:
         ...
 
+    @abstractmethod
+    def get_file_path(self, data_source_name: str, part_name: str) -> Path:
+        ...
+
 
 class ManualFilesystemDataSourceStorage(DataSourceStorage):
 
@@ -53,6 +57,9 @@ class ManualFilesystemDataSourceStorage(DataSourceStorage):
     def list_available_data(self) -> List[str]:
         return list(self.files.keys())
 
+    def get_file_path(self, data_source_name: str, part_name: str) -> Path:
+        return self.files[data_source_name][1][part_name]
+
 
 class FilesystemDataSourceStorage(DataSourceStorage):
 
@@ -64,12 +71,12 @@ class FilesystemDataSourceStorage(DataSourceStorage):
 
     def insert_data(self, name: str, plugin_name: str, parts: Dict[str, IO]):
         new_path = self.storage_path / name
-        new_path.mkdir()
+        new_path.mkdir(exist_ok=True)
         plugin_file_path = self.storage_path / f'{name}.plugin'
         plugin_file_path.write_text(plugin_name)
         for part_name, part_stream in parts.items():
             file_path = new_path / part_name
-            with file_path.open('w') as target_stream:
+            with file_path.open('wb') as target_stream:
                 shutil.copyfileobj(part_stream, target_stream)
 
     @contextmanager
@@ -91,3 +98,6 @@ class FilesystemDataSourceStorage(DataSourceStorage):
     def get_plugin_name(self, data_source_name: str) -> str:
         plugin_file_path = self.storage_path / f'{data_source_name}.plugin'
         return plugin_file_path.read_text()
+
+    def get_file_path(self, data_source_name: str, part_name: str) -> Path:
+        return self.storage_path / data_source_name / part_name
