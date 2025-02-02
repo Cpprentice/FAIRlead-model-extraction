@@ -14,6 +14,12 @@ class FormatApi(BaseFormatApi):
         request: Request,
     ) -> List[Format]:
         return [
-            Format(name=data_type.name, inputs=data_type.inputs)
+            Format(
+                name=data_type.name,
+                inputs=[
+                    f'{name}[{flag}]'
+                    for name, flag in data_type.inputs
+                ]
+            )
             for data_type in DataSourcePlugin.get_data_source_types()
         ]

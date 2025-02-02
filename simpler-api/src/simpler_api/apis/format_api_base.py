@@ -6,6 +6,9 @@ from fastapi import Request
 from simpler_api.models.format import Format
 
 
+file = bytes
+
+
 class BaseFormatApi:
     subclasses: ClassVar[Tuple] = ()
 

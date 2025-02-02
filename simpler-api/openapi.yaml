@@ -8,7 +8,7 @@ info:
     name: MIT
   termsOfService: http://swagger.io/terms/
   title: Schema API - OpenAPI 3.1
-  version: 0.4.0
+  version: 0.5.0
 externalDocs:
   description: Find out more about Swagger
   url: http://swagger.io
@@ -30,6 +30,128 @@ tags:
 - description: A file format supported by the schema API
   name: format
 paths:
+  /data-sources:
+    get:
+      description: desc
+      operationId: getAllDataSourceMeta
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/DataSource'
+                type: array
+            application/x-yaml:
+              schema:
+                items:
+                  $ref: '#/components/schemas/DataSource'
+                type: array
+            application/xml:
+              schema:
+                items:
+                  $ref: '#/components/schemas/DataSource'
+                type: array
+                xml:
+                  name: data-sources
+          description: successful operation
+      summary: Get meta information about all registered data sources
+      tags:
+      - data-source
+    post:
+      description: desc
+      operationId: addDataSourceMeta
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataSource'
+          application/x-yaml:
+            schema:
+              $ref: '#/components/schemas/DataSource'
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/DataSource'
+        description: specification of data source meta record
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataSource'
+            application/x-yaml:
+              schema:
+                $ref: '#/components/schemas/DataSource'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/DataSource'
+          description: successful operation
+        "400":
+          description: Bad request
+      summary: Insert a new data source meta record
+      tags:
+      - data-source
+  /data-sources/{dataSourceId}:
+    get:
+      description: desc
+      operationId: getDataSourceMeta
+      parameters:
+      - $ref: '#/components/parameters/dataSourceId'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/DataSource'
+                type: array
+            application/x-yaml:
+              schema:
+                items:
+                  $ref: '#/components/schemas/DataSource'
+                type: array
+            application/xml:
+              schema:
+                items:
+                  $ref: '#/components/schemas/DataSource'
+                type: array
+                xml:
+                  name: data-sources
+          description: successful operation
+      summary: Get meta information about a specified data sources
+      tags:
+      - data-source
+  /data-sources/{dataSourceId}/{pluginInputField}:
+    get:
+      description: desc
+      operationId: getDataSourceContent
+      parameters:
+      - $ref: '#/components/parameters/dataSourceId'
+      - $ref: '#/components/parameters/pluginInputField'
+      responses:
+        "200":
+          content:
+            application/octet-stream:
+              schema:
+                format: binary
+                type: string
+          description: successful operation
+      summary: Get content of a specified data sources
+      tags:
+      - data-source
+    post:
+      description: desc
+      operationId: uploadDataSourceContent
+      parameters:
+      - $ref: '#/components/parameters/dataSourceId'
+      - $ref: '#/components/parameters/pluginInputField'
+      responses:
+        "200":
+          description: successful operation
+      summary: Upload the content of a specified data source
+      tags:
+      - data-source
   /formats:
     get:
       description: desc
@@ -231,6 +353,22 @@ paths:
       - entity
 components:
   parameters:
+    dataSourceId:
+      explode: false
+      in: path
+      name: dataSourceId
+      required: true
+      schema:
+        type: string
+      style: simple
+    pluginInputField:
+      explode: false
+      in: path
+      name: pluginInputField
+      required: true
+      schema:
+        type: string
+      style: simple
     EntityPrefix:
       explode: true
       in: query
@@ -287,6 +425,43 @@ components:
         type: string
       style: simple
   schemas:
+    DataSource:
+      example:
+        plugin: plugin
+        description: description
+        id: id
+        text_data:
+        - input_field: input_field
+          value: value
+        - input_field: input_field
+          value: value
+        populated_input_fields:
+        - populated_input_fields
+        - populated_input_fields
+      properties:
+        id:
+          title: id
+          type: string
+        description:
+          title: description
+          type: string
+        plugin:
+          title: plugin
+          type: string
+        populated_input_fields:
+          items:
+            type: string
+          title: populated_input_fields
+          type: array
+        text_data:
+          items:
+            $ref: '#/components/schemas/DataSource_text_data_inner'
+          title: text_data
+          type: array
+      required:
+      - id
+      - plugin
+      title: DataSource
     EntityLink:
       format: url
       title: EntityLink
@@ -646,3 +821,18 @@ components:
       required:
       - entityName
       title: Entity
+    DataSource_text_data_inner:
+      example:
+        input_field: input_field
+        value: value
+      properties:
+        input_field:
+          title: input_field
+          type: string
+        value:
+          title: value
+          type: string
+      required:
+      - input_field
+      - value
+      title: DataSource_text_data_inner

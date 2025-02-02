@@ -3,6 +3,8 @@
 openapi.yaml
 src/simpler_api/__init__.py
 src/simpler_api/apis/__init__.py
+src/simpler_api/apis/data_source_api.py
+src/simpler_api/apis/data_source_api_base.py
 src/simpler_api/apis/entity_api.py
 src/simpler_api/apis/entity_api_base.py
 src/simpler_api/apis/format_api.py
@@ -15,6 +17,8 @@ src/simpler_api/models/__init__.py
 src/simpler_api/models/attribute.py
 src/simpler_api/models/attribute_modifier.py
 src/simpler_api/models/cardinality.py
+src/simpler_api/models/data_source.py
+src/simpler_api/models/data_source_text_data_inner.py
 src/simpler_api/models/entity.py
 src/simpler_api/models/entity_modifier.py
 src/simpler_api/models/extra_models.py

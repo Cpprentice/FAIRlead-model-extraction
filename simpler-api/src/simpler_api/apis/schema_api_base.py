@@ -6,6 +6,9 @@ from fastapi import Request
 from simpler_api.models.model_schema import ModelSchema
 
 
+file = bytes
+
+
 class BaseSchemaApi:
     subclasses: ClassVar[Tuple] = ()
 

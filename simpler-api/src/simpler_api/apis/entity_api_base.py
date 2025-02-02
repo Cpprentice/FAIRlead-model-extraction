@@ -6,6 +6,9 @@ from fastapi import Request
 from simpler_api.models.entity import Entity
 
 
+file = bytes
+
+
 class BaseEntityApi:
     subclasses: ClassVar[Tuple] = ()
 
