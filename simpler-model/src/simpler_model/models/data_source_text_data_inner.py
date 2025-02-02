@@ -22,19 +22,19 @@ import json
 
 
 from pydantic import BaseModel, ConfigDict, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 try:
     from typing import Self
 except ImportError:
     from typing_extensions import Self
 
-class Format(BaseModel):
+class DataSourceTextDataInner(BaseModel):
     """
-    Format
+    DataSourceTextDataInner
     """ # noqa: E501
-    name: Optional[StrictStr] = None
-    inputs: Optional[List[StrictStr]] = None
-    __properties: ClassVar[List[str]] = ["name", "inputs"]
+    input_field: StrictStr
+    value: StrictStr
+    __properties: ClassVar[List[str]] = ["input_field", "value"]
 
     model_config = {
         "populate_by_name": True,
@@ -54,7 +54,7 @@ class Format(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Self:
-        """Create an instance of Format from a JSON string"""
+        """Create an instance of DataSourceTextDataInner from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -77,7 +77,7 @@ class Format(BaseModel):
 
     @classmethod
     def from_dict(cls, obj: Dict) -> Self:
-        """Create an instance of Format from a dict"""
+        """Create an instance of DataSourceTextDataInner from a dict"""
         if obj is None:
             return None
 
@@ -87,11 +87,11 @@ class Format(BaseModel):
         # raise errors for additional fields in the input
         for _key in obj.keys():
             if _key not in cls.__properties:
-                raise ValueError("Error due to additional fields (not defined in Format) in the input: " + _key)
+                raise ValueError("Error due to additional fields (not defined in DataSourceTextDataInner) in the input: " + _key)
 
         _obj = cls.model_validate({
-            "name": obj.get("name"),
-            "inputs": obj.get("inputs")
+            "input_field": obj.get("input_field"),
+            "value": obj.get("value")
         })
         return _obj
 

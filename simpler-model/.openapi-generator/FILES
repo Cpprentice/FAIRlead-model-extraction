@@ -6,6 +6,8 @@ src/simpler_model/models/__init__.py
 src/simpler_model/models/attribute.py
 src/simpler_model/models/attribute_modifier.py
 src/simpler_model/models/cardinality.py
+src/simpler_model/models/data_source.py
+src/simpler_model/models/data_source_text_data_inner.py
 src/simpler_model/models/entity.py
 src/simpler_model/models/entity_modifier.py
 src/simpler_model/models/format.py
