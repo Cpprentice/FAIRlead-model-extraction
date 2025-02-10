@@ -48,10 +48,11 @@ async def get_all_schemas(
     request: Request,
     prevent_optimization: bool = Query(False, description="", alias="preventOptimization"),
     prevent_automatic_optimization: bool = Query(False, description="", alias="preventAutomaticOptimization"),
+    prevent_user_optimization: bool = Query(False, description="", alias="preventUserOptimization"),
     generate_inverse_relations: bool = Query(False, description="Toggles whether to generate inverse relations for each existing relation that has no schema based inverse", alias="generateInverseRelations"),
 ) -> List[ModelSchema]:
     """desc"""
-    return BaseSchemaApi.subclasses[0]().get_all_schemas(request, prevent_optimization, prevent_automatic_optimization, generate_inverse_relations)
+    return BaseSchemaApi.subclasses[0]().get_all_schemas(request, prevent_optimization, prevent_automatic_optimization, prevent_user_optimization, generate_inverse_relations)
 
 
 @router.get(
@@ -69,10 +70,11 @@ async def get_schema_by_id(
     schemaId: str = Path(..., description="ID of schema to access"),
     prevent_optimization: bool = Query(False, description="", alias="preventOptimization"),
     prevent_automatic_optimization: bool = Query(False, description="", alias="preventAutomaticOptimization"),
+    prevent_user_optimization: bool = Query(False, description="", alias="preventUserOptimization"),
     generate_inverse_relations: bool = Query(False, description="Toggles whether to generate inverse relations for each existing relation that has no schema based inverse", alias="generateInverseRelations"),
 ) -> ModelSchema:
     """desc"""
-    return BaseSchemaApi.subclasses[0]().get_schema_by_id(request, schemaId, prevent_optimization, prevent_automatic_optimization, generate_inverse_relations)
+    return BaseSchemaApi.subclasses[0]().get_schema_by_id(request, schemaId, prevent_optimization, prevent_automatic_optimization, prevent_user_optimization, generate_inverse_relations)
 
 
 @router.get(
@@ -93,7 +95,8 @@ async def get_schema_diagram(
     render_distance: int = Query(2, description="The distance to render when using highlighted entities", alias="renderDistance"),
     prevent_optimization: bool = Query(False, description="", alias="preventOptimization"),
     prevent_automatic_optimization: bool = Query(False, description="", alias="preventAutomaticOptimization"),
+    prevent_user_optimization: bool = Query(False, description="", alias="preventUserOptimization"),
     generate_inverse_relations: bool = Query(False, description="Toggles whether to generate inverse relations for each existing relation that has no schema based inverse", alias="generateInverseRelations"),
 ) -> str:
     """desc"""
-    return BaseSchemaApi.subclasses[0]().get_schema_diagram(request, schemaId, show_attributes, selected_entities, render_distance, prevent_optimization, prevent_automatic_optimization, generate_inverse_relations)
+    return BaseSchemaApi.subclasses[0]().get_schema_diagram(request, schemaId, show_attributes, selected_entities, render_distance, prevent_optimization, prevent_automatic_optimization, prevent_user_optimization, generate_inverse_relations)

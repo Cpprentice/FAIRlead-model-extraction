@@ -12,6 +12,7 @@ from simpler_api.impl.schema_urls import introduce_api_urls_to_entity_list, intr
 from simpler_api.impl.storage import get_storage
 from simpler_api.models.entity import Entity
 from simpler_api.models.model_schema import ModelSchema
+from simpler_core.partitioning import create_nx_graph_from_entity_list, create_filtered_entity_list
 from simpler_core.plugin import InputDataError
 from simpler_core.schema import apply_schema_correction_if_available, introduce_inverse_relations, optimize_schema
 
@@ -23,7 +24,10 @@ class EntityApi(BaseEntityApi):
             schemaId: str,
             prevent_optimization: bool,
             prevent_automatic_optimization: bool,
+            prevent_user_optimization: bool,
             generate_inverse_relations: bool,
+            entity_filter: List[str],
+            entity_filter_distance: int,
     ) -> List[Entity]:
 
         try:
@@ -37,6 +41,9 @@ class EntityApi(BaseEntityApi):
         except InputDataError as ex:
             raise HTTPException(status_code=400, detail="Schema extraction failed due to invalid input data") from ex
 
+        if entity_filter:
+            entities = create_filtered_entity_list(entities, entity_filter, entity_filter_distance)
+        # create_nx_graph_from_entity_list(entities)
         introduce_api_urls_to_entity_list(entities, request, schemaId)
 
         return wrap_response_according_to_accept_header(request, entities)
@@ -48,6 +55,7 @@ class EntityApi(BaseEntityApi):
             entityId: str,
             prevent_optimization: bool,
             prevent_automatic_optimization: bool,
+            prevent_user_optimization: bool,
             generate_inverse_relations: bool,
     ) -> Entity:
         try:

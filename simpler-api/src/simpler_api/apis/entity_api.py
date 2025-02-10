@@ -49,10 +49,13 @@ async def get_entities_by_schema(
     schemaId: str = Path(..., description="ID of schema to access"),
     prevent_optimization: bool = Query(False, description="", alias="preventOptimization"),
     prevent_automatic_optimization: bool = Query(False, description="", alias="preventAutomaticOptimization"),
+    prevent_user_optimization: bool = Query(False, description="", alias="preventUserOptimization"),
     generate_inverse_relations: bool = Query(False, description="Toggles whether to generate inverse relations for each existing relation that has no schema based inverse", alias="generateInverseRelations"),
+    entity_filter: List[str] = Query([], description="Only list entities of the schema that are in range of the specified entities", alias="entityFilter"),
+    entity_filter_distance: int = Query(1, description="Specifies the search distance if entityFilter is used", alias="entityFilterDistance"),
 ) -> List[Entity]:
     """desc"""
-    return BaseEntityApi.subclasses[0]().get_entities_by_schema(request, schemaId, prevent_optimization, prevent_automatic_optimization, generate_inverse_relations)
+    return BaseEntityApi.subclasses[0]().get_entities_by_schema(request, schemaId, prevent_optimization, prevent_automatic_optimization, prevent_user_optimization, generate_inverse_relations, entity_filter, entity_filter_distance)
 
 
 @router.get(
@@ -67,10 +70,11 @@ async def get_entities_by_schema(
 async def get_entity_by_id(
     request: Request,
     schemaId: str = Path(..., description="ID of schema to access"),
-    entityId: str = Path(..., description="ID of entity to return"),
+    entityId: str = Path(..., description="ID of entity to access"),
     prevent_optimization: bool = Query(False, description="", alias="preventOptimization"),
     prevent_automatic_optimization: bool = Query(False, description="", alias="preventAutomaticOptimization"),
+    prevent_user_optimization: bool = Query(False, description="", alias="preventUserOptimization"),
     generate_inverse_relations: bool = Query(False, description="Toggles whether to generate inverse relations for each existing relation that has no schema based inverse", alias="generateInverseRelations"),
 ) -> Entity:
     """desc"""
-    return BaseEntityApi.subclasses[0]().get_entity_by_id(request, schemaId, entityId, prevent_optimization, prevent_automatic_optimization, generate_inverse_relations)
+    return BaseEntityApi.subclasses[0]().get_entity_by_id(request, schemaId, entityId, prevent_optimization, prevent_automatic_optimization, prevent_user_optimization, generate_inverse_relations)

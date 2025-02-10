@@ -14,4 +14,4 @@
 
 
 
-from simpler_model.models.entity import Entity
+from simpler_model.models.partition import Partition

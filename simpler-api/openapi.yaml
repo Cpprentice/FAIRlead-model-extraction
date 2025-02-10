@@ -8,7 +8,7 @@ info:
     name: MIT
   termsOfService: http://swagger.io/terms/
   title: Schema API - OpenAPI 3.1
-  version: 0.5.0
+  version: 0.7.0
 externalDocs:
   description: Find out more about Swagger
   url: http://swagger.io
@@ -187,6 +187,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/preventOptimization'
       - $ref: '#/components/parameters/preventAutomaticOptimization'
+      - $ref: '#/components/parameters/preventUserOptimization'
       - $ref: '#/components/parameters/generateInverseRelations'
       responses:
         "200":
@@ -220,6 +221,7 @@ paths:
       - $ref: '#/components/parameters/schemaId'
       - $ref: '#/components/parameters/preventOptimization'
       - $ref: '#/components/parameters/preventAutomaticOptimization'
+      - $ref: '#/components/parameters/preventUserOptimization'
       - $ref: '#/components/parameters/generateInverseRelations'
       responses:
         "200":
@@ -239,6 +241,321 @@ paths:
       summary: Get schema by ID
       tags:
       - schema
+  /schemata/{schemaId}/corrections/entities:
+    post:
+      description: Add an entirely new entity
+      operationId: addNewEntityCorrection
+      parameters:
+      - $ref: '#/components/parameters/schemaId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Entity'
+          application/x-yaml:
+            schema:
+              $ref: '#/components/schemas/Entity'
+          application-xml:
+            schema:
+              $ref: '#/components/schemas/Entity'
+        description: A new entity object
+        required: true
+      responses:
+        "200":
+          description: successful operation
+        "400":
+          content:
+            text/plain:
+              schema:
+                type: string
+          description: bad request
+        "404":
+          description: schema not found
+      summary: Add an entirely new entity
+      tags:
+      - correction
+  /schemata/{schemaId}/corrections/entities/{entityId}:
+    post:
+      description: change entity name
+      operationId: changeEntityNameCorrection
+      parameters:
+      - $ref: '#/components/parameters/schemaId'
+      - $ref: '#/components/parameters/entityId'
+      requestBody:
+        content:
+          text/plain:
+            schema:
+              type: string
+        description: new name as plain string
+        required: true
+      responses:
+        "200":
+          description: successful operation
+        "400":
+          content:
+            text/plain:
+              schema:
+                type: string
+          description: bad request
+        "404":
+          description: schema or entity not found
+      summary: change entity name
+      tags:
+      - correction
+  /schemata/{schemaId}/corrections/entities/{entityId}/modifiers:
+    put:
+      description: Update entity modifiers
+      operationId: updateEntityModifiersCorrection
+      parameters:
+      - $ref: '#/components/parameters/schemaId'
+      - $ref: '#/components/parameters/entityId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              items:
+                $ref: '#/components/schemas/EntityModifier'
+              type: array
+          application/x-yaml:
+            schema:
+              items:
+                $ref: '#/components/schemas/EntityModifier'
+              type: array
+          application-xml:
+            schema:
+              items:
+                $ref: '#/components/schemas/EntityModifier'
+              type: array
+              xml:
+                name: EntityModifiers
+        description: list of EntityModifier objects
+        required: true
+      responses:
+        "200":
+          description: successful operation
+        "400":
+          content:
+            text/plain:
+              schema:
+                type: string
+          description: bad request
+        "404":
+          description: schema or entity not found
+      summary: Update entity modifiers
+      tags:
+      - correction
+  /schemata/{schemaId}/corrections/entities/{entityId}/attributes:
+    post:
+      description: Add an entirely new attribute
+      operationId: addNewAttributeCorrection
+      parameters:
+      - $ref: '#/components/parameters/schemaId'
+      - $ref: '#/components/parameters/entityId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Attribute'
+          application/x-yaml:
+            schema:
+              $ref: '#/components/schemas/Attribute'
+          application-xml:
+            schema:
+              $ref: '#/components/schemas/Attribute'
+        description: A new attribute object
+        required: true
+      responses:
+        "200":
+          description: successful operation
+        "400":
+          content:
+            text/plain:
+              schema:
+                type: string
+          description: bad request
+        "404":
+          description: schema or entity not found
+      summary: Add an entirely new attribute
+      tags:
+      - correction
+  /schemata/{schemaId}/corrections/entities/{entityId}/attributes/{attributeId}:
+    post:
+      description: change attribute name
+      operationId: changeAttributeNameCorrection
+      parameters:
+      - $ref: '#/components/parameters/schemaId'
+      - $ref: '#/components/parameters/entityId'
+      - $ref: '#/components/parameters/attributeId'
+      requestBody:
+        content:
+          text/plain:
+            schema:
+              type: string
+        description: new name as plain string
+        required: true
+      responses:
+        "200":
+          description: successful operation
+        "400":
+          content:
+            text/plain:
+              schema:
+                type: string
+          description: bad request
+        "404":
+          description: "schema, entity or attribute not found"
+      summary: change attribute name
+      tags:
+      - correction
+  /schemata/{schemaId}/corrections/entities/{entityId}/attributes/{attributeId}/modifiers:
+    put:
+      description: Update attribute modifiers
+      operationId: updateAttributeModifiersCorrection
+      parameters:
+      - $ref: '#/components/parameters/schemaId'
+      - $ref: '#/components/parameters/entityId'
+      - $ref: '#/components/parameters/attributeId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              items:
+                $ref: '#/components/schemas/AttributeModifier'
+              type: array
+          application/x-yaml:
+            schema:
+              items:
+                $ref: '#/components/schemas/AttributeModifier'
+              type: array
+          application-xml:
+            schema:
+              items:
+                $ref: '#/components/schemas/AttributeModifier'
+              type: array
+              xml:
+                name: AttributeModifiers
+        description: list of AttributeModifier objects
+        required: true
+      responses:
+        "200":
+          description: successful operation
+        "400":
+          content:
+            text/plain:
+              schema:
+                type: string
+          description: bad request
+        "404":
+          description: "schema, entity or attribute not found"
+      summary: Update attribute modifiers
+      tags:
+      - correction
+  /schemata/{schemaId}/corrections/entities/{entityId}/relations:
+    post:
+      description: Add an entirely new relation
+      operationId: addNewRelationCorrection
+      parameters:
+      - $ref: '#/components/parameters/schemaId'
+      - $ref: '#/components/parameters/entityId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Relation'
+          application/x-yaml:
+            schema:
+              $ref: '#/components/schemas/Relation'
+          application-xml:
+            schema:
+              $ref: '#/components/schemas/Relation'
+        description: A new relation object
+        required: true
+      responses:
+        "200":
+          description: successful operation
+        "400":
+          content:
+            text/plain:
+              schema:
+                type: string
+          description: bad request
+        "404":
+          description: schema or entity not found
+      summary: Add an entirely new relation
+      tags:
+      - correction
+  /schemata/{schemaId}/corrections/entities/{entityId}/relations/{relationId}:
+    post:
+      description: change relation name
+      operationId: changeRelationNameCorrection
+      parameters:
+      - $ref: '#/components/parameters/schemaId'
+      - $ref: '#/components/parameters/entityId'
+      - $ref: '#/components/parameters/relationId'
+      requestBody:
+        content:
+          text/plain:
+            schema:
+              type: string
+        description: new name as plain string
+        required: true
+      responses:
+        "200":
+          description: successful operation
+        "400":
+          content:
+            text/plain:
+              schema:
+                type: string
+          description: bad request
+        "404":
+          description: "schema, entity or relation not found"
+      summary: change relation name
+      tags:
+      - correction
+  /schemata/{schemaId}/corrections/entities/{entityId}/relations/{relationId}/modifiers:
+    put:
+      description: Update relation modifiers
+      operationId: updateRelationModifiersCorrection
+      parameters:
+      - $ref: '#/components/parameters/schemaId'
+      - $ref: '#/components/parameters/entityId'
+      - $ref: '#/components/parameters/relationId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              items:
+                $ref: '#/components/schemas/RelationModifier'
+              type: array
+          application/x-yaml:
+            schema:
+              items:
+                $ref: '#/components/schemas/RelationModifier'
+              type: array
+          application-xml:
+            schema:
+              items:
+                $ref: '#/components/schemas/RelationModifier'
+              type: array
+              xml:
+                name: RelationModifiers
+        description: list of RelationModifier objects
+        required: true
+      responses:
+        "200":
+          description: successful operation
+        "400":
+          content:
+            text/plain:
+              schema:
+                type: string
+          description: bad request
+        "404":
+          description: "schema, entity or relation not found"
+      summary: Update relation modifiers
+      tags:
+      - correction
   /schemata/{schemaId}/diagram:
     get:
       description: desc
@@ -276,6 +593,7 @@ paths:
         style: form
       - $ref: '#/components/parameters/preventOptimization'
       - $ref: '#/components/parameters/preventAutomaticOptimization'
+      - $ref: '#/components/parameters/preventUserOptimization'
       - $ref: '#/components/parameters/generateInverseRelations'
       responses:
         "200":
@@ -292,6 +610,39 @@ paths:
       summary: Get a diagram for the schema
       tags:
       - schema
+  /schemata/{schemaId}/partitioned-entities:
+    get:
+      description: desc
+      operationId: getPartitionedEntitiesBySchema
+      parameters:
+      - $ref: '#/components/parameters/schemaId'
+      - $ref: '#/components/parameters/preventOptimization'
+      - $ref: '#/components/parameters/preventAutomaticOptimization'
+      - $ref: '#/components/parameters/preventUserOptimization'
+      - $ref: '#/components/parameters/generateInverseRelations'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Partition'
+                type: array
+            application/x-yaml:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Partition'
+                type: array
+            application/xml:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Partition'
+                type: array
+                xml:
+                  name: Partitions
+          description: successful operation
+      tags:
+      - partition
   /schemata/{schemaId}/entities:
     get:
       description: desc
@@ -300,7 +651,10 @@ paths:
       - $ref: '#/components/parameters/schemaId'
       - $ref: '#/components/parameters/preventOptimization'
       - $ref: '#/components/parameters/preventAutomaticOptimization'
+      - $ref: '#/components/parameters/preventUserOptimization'
       - $ref: '#/components/parameters/generateInverseRelations'
+      - $ref: '#/components/parameters/entityFilter'
+      - $ref: '#/components/parameters/entityFilterDistance'
       responses:
         "200":
           content:
@@ -334,6 +688,7 @@ paths:
       - $ref: '#/components/parameters/entityId'
       - $ref: '#/components/parameters/preventOptimization'
       - $ref: '#/components/parameters/preventAutomaticOptimization'
+      - $ref: '#/components/parameters/preventUserOptimization'
       - $ref: '#/components/parameters/generateInverseRelations'
       responses:
         "200":
@@ -395,6 +750,15 @@ components:
         default: false
         type: boolean
       style: form
+    preventUserOptimization:
+      explode: true
+      in: query
+      name: preventUserOptimization
+      required: false
+      schema:
+        default: false
+        type: boolean
+      style: form
     generateInverseRelations:
       description: Toggles whether to generate inverse relations for each existing
         relation that has no schema based inverse
@@ -406,8 +770,31 @@ components:
         default: false
         type: boolean
       style: form
+    entityFilter:
+      description: Only list entities of the schema that are in range of the specified
+        entities
+      explode: true
+      in: query
+      name: entityFilter
+      required: false
+      schema:
+        default: []
+        items:
+          type: string
+        type: array
+      style: form
+    entityFilterDistance:
+      description: Specifies the search distance if entityFilter is used
+      explode: true
+      in: query
+      name: entityFilterDistance
+      required: false
+      schema:
+        default: 1
+        type: integer
+      style: form
     entityId:
-      description: ID of entity to return
+      description: ID of entity to access
       explode: false
       in: path
       name: entityId
@@ -420,6 +807,24 @@ components:
       explode: false
       in: path
       name: schemaId
+      required: true
+      schema:
+        type: string
+      style: simple
+    attributeId:
+      description: ID of attribute to access
+      explode: false
+      in: path
+      name: attributeId
+      required: true
+      schema:
+        type: string
+      style: simple
+    relationId:
+      description: ID of relation to access
+      explode: false
+      in: path
+      name: relationId
       required: true
       schema:
         type: string
@@ -482,6 +887,272 @@ components:
           title: inputs
           type: array
       title: Format
+    Partition:
+      example:
+        entities:
+        - isObjectInRelation:
+          - objectCardinality:
+              cardinality: cardinality
+            subjectCardinality:
+              cardinality: cardinality
+            hasSubjectEntity: ""
+            relationName:
+            - relationName
+            - relationName
+            hasObjectEntity: ""
+            inverseRelation: inverseRelation
+            hasAttribute:
+            - attributeName:
+              - attributeName
+              - attributeName
+              hasAttributeModifier:
+              - attributeModifier: attributeModifier
+              - attributeModifier: attributeModifier
+            - attributeName:
+              - attributeName
+              - attributeName
+              hasAttributeModifier:
+              - attributeModifier: attributeModifier
+              - attributeModifier: attributeModifier
+            hasRelationModifier:
+            - relationModifier: relationModifier
+            - relationModifier: relationModifier
+          - objectCardinality:
+              cardinality: cardinality
+            subjectCardinality:
+              cardinality: cardinality
+            hasSubjectEntity: ""
+            relationName:
+            - relationName
+            - relationName
+            hasObjectEntity: ""
+            inverseRelation: inverseRelation
+            hasAttribute:
+            - attributeName:
+              - attributeName
+              - attributeName
+              hasAttributeModifier:
+              - attributeModifier: attributeModifier
+              - attributeModifier: attributeModifier
+            - attributeName:
+              - attributeName
+              - attributeName
+              hasAttributeModifier:
+              - attributeModifier: attributeModifier
+              - attributeModifier: attributeModifier
+            hasRelationModifier:
+            - relationModifier: relationModifier
+            - relationModifier: relationModifier
+          hasEntityModifier:
+          - entityModifier: entityModifier
+          - entityModifier: entityModifier
+          entityName:
+          - entityName
+          - entityName
+          entityUrl: entityUrl
+          hasAttribute:
+          - attributeName:
+            - attributeName
+            - attributeName
+            hasAttributeModifier:
+            - attributeModifier: attributeModifier
+            - attributeModifier: attributeModifier
+          - attributeName:
+            - attributeName
+            - attributeName
+            hasAttributeModifier:
+            - attributeModifier: attributeModifier
+            - attributeModifier: attributeModifier
+          isSubjectInRelation:
+          - objectCardinality:
+              cardinality: cardinality
+            subjectCardinality:
+              cardinality: cardinality
+            hasSubjectEntity: ""
+            relationName:
+            - relationName
+            - relationName
+            hasObjectEntity: ""
+            inverseRelation: inverseRelation
+            hasAttribute:
+            - attributeName:
+              - attributeName
+              - attributeName
+              hasAttributeModifier:
+              - attributeModifier: attributeModifier
+              - attributeModifier: attributeModifier
+            - attributeName:
+              - attributeName
+              - attributeName
+              hasAttributeModifier:
+              - attributeModifier: attributeModifier
+              - attributeModifier: attributeModifier
+            hasRelationModifier:
+            - relationModifier: relationModifier
+            - relationModifier: relationModifier
+          - objectCardinality:
+              cardinality: cardinality
+            subjectCardinality:
+              cardinality: cardinality
+            hasSubjectEntity: ""
+            relationName:
+            - relationName
+            - relationName
+            hasObjectEntity: ""
+            inverseRelation: inverseRelation
+            hasAttribute:
+            - attributeName:
+              - attributeName
+              - attributeName
+              hasAttributeModifier:
+              - attributeModifier: attributeModifier
+              - attributeModifier: attributeModifier
+            - attributeName:
+              - attributeName
+              - attributeName
+              hasAttributeModifier:
+              - attributeModifier: attributeModifier
+              - attributeModifier: attributeModifier
+            hasRelationModifier:
+            - relationModifier: relationModifier
+            - relationModifier: relationModifier
+        - isObjectInRelation:
+          - objectCardinality:
+              cardinality: cardinality
+            subjectCardinality:
+              cardinality: cardinality
+            hasSubjectEntity: ""
+            relationName:
+            - relationName
+            - relationName
+            hasObjectEntity: ""
+            inverseRelation: inverseRelation
+            hasAttribute:
+            - attributeName:
+              - attributeName
+              - attributeName
+              hasAttributeModifier:
+              - attributeModifier: attributeModifier
+              - attributeModifier: attributeModifier
+            - attributeName:
+              - attributeName
+              - attributeName
+              hasAttributeModifier:
+              - attributeModifier: attributeModifier
+              - attributeModifier: attributeModifier
+            hasRelationModifier:
+            - relationModifier: relationModifier
+            - relationModifier: relationModifier
+          - objectCardinality:
+              cardinality: cardinality
+            subjectCardinality:
+              cardinality: cardinality
+            hasSubjectEntity: ""
+            relationName:
+            - relationName
+            - relationName
+            hasObjectEntity: ""
+            inverseRelation: inverseRelation
+            hasAttribute:
+            - attributeName:
+              - attributeName
+              - attributeName
+              hasAttributeModifier:
+              - attributeModifier: attributeModifier
+              - attributeModifier: attributeModifier
+            - attributeName:
+              - attributeName
+              - attributeName
+              hasAttributeModifier:
+              - attributeModifier: attributeModifier
+              - attributeModifier: attributeModifier
+            hasRelationModifier:
+            - relationModifier: relationModifier
+            - relationModifier: relationModifier
+          hasEntityModifier:
+          - entityModifier: entityModifier
+          - entityModifier: entityModifier
+          entityName:
+          - entityName
+          - entityName
+          entityUrl: entityUrl
+          hasAttribute:
+          - attributeName:
+            - attributeName
+            - attributeName
+            hasAttributeModifier:
+            - attributeModifier: attributeModifier
+            - attributeModifier: attributeModifier
+          - attributeName:
+            - attributeName
+            - attributeName
+            hasAttributeModifier:
+            - attributeModifier: attributeModifier
+            - attributeModifier: attributeModifier
+          isSubjectInRelation:
+          - objectCardinality:
+              cardinality: cardinality
+            subjectCardinality:
+              cardinality: cardinality
+            hasSubjectEntity: ""
+            relationName:
+            - relationName
+            - relationName
+            hasObjectEntity: ""
+            inverseRelation: inverseRelation
+            hasAttribute:
+            - attributeName:
+              - attributeName
+              - attributeName
+              hasAttributeModifier:
+              - attributeModifier: attributeModifier
+              - attributeModifier: attributeModifier
+            - attributeName:
+              - attributeName
+              - attributeName
+              hasAttributeModifier:
+              - attributeModifier: attributeModifier
+              - attributeModifier: attributeModifier
+            hasRelationModifier:
+            - relationModifier: relationModifier
+            - relationModifier: relationModifier
+          - objectCardinality:
+              cardinality: cardinality
+            subjectCardinality:
+              cardinality: cardinality
+            hasSubjectEntity: ""
+            relationName:
+            - relationName
+            - relationName
+            hasObjectEntity: ""
+            inverseRelation: inverseRelation
+            hasAttribute:
+            - attributeName:
+              - attributeName
+              - attributeName
+              hasAttributeModifier:
+              - attributeModifier: attributeModifier
+              - attributeModifier: attributeModifier
+            - attributeName:
+              - attributeName
+              - attributeName
+              hasAttributeModifier:
+              - attributeModifier: attributeModifier
+              - attributeModifier: attributeModifier
+            hasRelationModifier:
+            - relationModifier: relationModifier
+            - relationModifier: relationModifier
+        title: title
+      properties:
+        title:
+          title: title
+          type: string
+        entities:
+          items:
+            $ref: '#/components/schemas/Entity'
+          title: entities
+          type: array
+      title: Partition
     Schema:
       example:
         schemaFile: schemaFile

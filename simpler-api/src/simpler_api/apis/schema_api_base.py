@@ -20,6 +20,7 @@ class BaseSchemaApi:
         request: Request,
         prevent_optimization: bool,
         prevent_automatic_optimization: bool,
+        prevent_user_optimization: bool,
         generate_inverse_relations: bool,
     ) -> List[ModelSchema]:
         """desc"""
@@ -32,6 +33,7 @@ class BaseSchemaApi:
         schemaId: str,
         prevent_optimization: bool,
         prevent_automatic_optimization: bool,
+        prevent_user_optimization: bool,
         generate_inverse_relations: bool,
     ) -> ModelSchema:
         """desc"""
@@ -47,6 +49,7 @@ class BaseSchemaApi:
         render_distance: int,
         prevent_optimization: bool,
         prevent_automatic_optimization: bool,
+        prevent_user_optimization: bool,
         generate_inverse_relations: bool,
     ) -> str:
         """desc"""

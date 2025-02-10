@@ -21,7 +21,10 @@ class BaseEntityApi:
         schemaId: str,
         prevent_optimization: bool,
         prevent_automatic_optimization: bool,
+        prevent_user_optimization: bool,
         generate_inverse_relations: bool,
+        entity_filter: List[str],
+        entity_filter_distance: int,
     ) -> List[Entity]:
         """desc"""
         ...
@@ -34,6 +37,7 @@ class BaseEntityApi:
         entityId: str,
         prevent_optimization: bool,
         prevent_automatic_optimization: bool,
+        prevent_user_optimization: bool,
         generate_inverse_relations: bool,
     ) -> Entity:
         """desc"""
