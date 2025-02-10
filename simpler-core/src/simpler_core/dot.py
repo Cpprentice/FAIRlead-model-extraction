@@ -4,6 +4,7 @@ import urllib.parse
 import networkx as nx
 from pydot import Dot, Node, Edge
 
+from simpler_core.partitioning import filter_nx_graph
 from simpler_model import Entity, EntityModifier, RelationModifier, Cardinality, Attribute
 
 cardinality_translation = {
@@ -101,14 +102,12 @@ def create_graph(entities: List[Entity], show_attributes=False) -> Dot:
 
 def filter_graph(graph: Dot, start_nodes: List[str], max_distance: int) -> Dot | None:
     nxg = nx.drawing.nx_pydot.from_pydot(graph)
-
-    nodes_within_distance = set()
     for start_node in start_nodes:
         try:
             nxg.nodes[start_node].update({'style': 'filled', 'fillcolor': 'lightblue'})
-            nodes_within_distance.update(nx.single_source_shortest_path_length(nxg, start_node, cutoff=max_distance))
         except KeyError:
             return None
-
-    reduced_graph = nxg.subgraph(nodes_within_distance)
+    reduced_graph = filter_nx_graph(nxg, start_nodes, max_distance)
+    if reduced_graph is None:
+        return None
     return nx.drawing.nx_pydot.to_pydot(reduced_graph)
