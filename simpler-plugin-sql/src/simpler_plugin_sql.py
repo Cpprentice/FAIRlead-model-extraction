@@ -178,22 +178,36 @@ class BaseSqlDataSourcePlugin(DataSourcePlugin):
 
     @staticmethod
     def _get_foreign_key_objects(metadata: MetaData) -> List[ForeignKey]:
-        native_foreign_keys = [
+        native_foreign_keys = sorted([
             fk
             for table in metadata.tables.values()
             for fk in table.foreign_keys
-        ]
+        ], key=str)
+        # TODO it seems this call is non deterministic for the order and consecutive calls give another order
+        #  lets try if sorted(key=str) does fix that
 
-        constraint_set = set(fk.constraint for fk in native_foreign_keys)
+        # The following does only take each constraint once but maintains order
+        #  However, just using the constraints seems to lose information - in the mini mondial we have 9 fk entries
+        #  for the different columns but only a total of 4 constraints that address multiple columns.
+        #  We must loop each constraint multiple times to find all columns
+        constraint_list = list(dict.fromkeys(fk.constraint for fk in native_foreign_keys))
+        # constraint_set = set(fk.constraint for fk in native_foreign_keys)
         constraint_name_lookup = {
             constraint: f'constraint_{num + 1}'
-            for num, constraint in enumerate(constraint_set)
+            # for num, constraint in enumerate(constraint_set)
+            # for num, constraint in enumerate(fk.constraint for fk in native_foreign_keys)
+            for num, constraint in enumerate(constraint_list)
+        }
+        fk_name_lookup = {
+            fk: f'fk_{num + 1}'
+            for num, fk in enumerate(native_foreign_keys)
         }
 
         foreign_keys = [
             ForeignKey(
                 foreign_table=fk.parent.table.name,
-                constraint_name=fk.name if fk.name is not None else constraint_name_lookup[fk.constraint],
+                # constraint_name=fk.name if fk.name is not None else constraint_name_lookup[fk.constraint],
+                constraint_name=fk.name if fk.name is not None else fk_name_lookup[fk],
                 fk_column=fk.parent.name,
                 nullable=fk.column.nullable,
                 no=0,
@@ -273,10 +287,11 @@ class BaseSqlDataSourcePlugin(DataSourcePlugin):
             for column in table.columns:
                 attribute_lookup[column.table.name].append(Attribute(
                     attribute_name=[column.name],
-                    has_attribute_modifier=None
-                        if not column.primary_key
-                        else [AttributeModifier(attribute_modifier='key')],
-                    # TODO Should we consider unique constraints as well?
+                    has_attribute_modifier=[AttributeModifier(attribute_modifier='key')]
+                        if column.primary_key or (not column.nullable and column.unique)
+                        else None,
+                    # TODO Should we consider unique constraints as well <- we do if they are not nullable
+                    #  however for the sqlite db of sincal it seems the unique flag is None even for unique columns
                 ))
         return attribute_lookup
 
