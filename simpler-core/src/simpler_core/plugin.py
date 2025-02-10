@@ -18,6 +18,7 @@ except ImportError:
 class OptimizationSettings(BaseModel):
     prevent_optimization: bool = Field(False, alias='preventOptimization')
     prevent_automatic_optimization: bool = Field(False, alias='preventAutomaticOptimization')
+    prevent_user_optimization: bool = Field(False, alias='preventUserOptimization')
     generate_inverse_relations: bool = Field(False, alias='generateInverseRelations')
 
 
@@ -149,7 +150,8 @@ class DataSourceCursor:
     def get_all_entities(self) -> List[Entity]:
         entities = self.plugin.get_all_entities(self.name)
         if not self.settings.prevent_optimization:
-            entities = apply_schema_correction_if_available(entities, self.plugin.storage, self.name)
+            if not self.settings.prevent_user_optimization:
+                entities = apply_schema_correction_if_available(entities, self.plugin.storage, self.name)
             if not self.settings.prevent_automatic_optimization:
                 optimize_schema(entities)
             if self.settings.generate_inverse_relations:
