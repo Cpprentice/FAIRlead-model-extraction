@@ -20,6 +20,9 @@ class DataSourceStorage(ABC):
         ...
 
     @abstractmethod
+    def add_more_data(self, name: str, parts: dict[str, IO]): ...
+
+    @abstractmethod
     def get_plugin_name(self, data_source_name: str) -> str:
         ...
 
@@ -51,6 +54,9 @@ class ManualFilesystemDataSourceStorage(DataSourceStorage):
     def insert_data(self, name: str, plugin_name: str, parts: Dict[str, IO]):
         raise NotImplementedError()
 
+    def add_more_data(self, name: str, parts: dict[str, IO]):
+        raise NotImplementedError()
+
     def get_plugin_name(self, data_source_name: str) -> str:
         return self.files[data_source_name][0]
 
@@ -76,6 +82,13 @@ class FilesystemDataSourceStorage(DataSourceStorage):
         plugin_file_path.write_text(plugin_name)
         for part_name, part_stream in parts.items():
             file_path = new_path / part_name
+            with file_path.open('wb') as target_stream:
+                shutil.copyfileobj(part_stream, target_stream)
+
+    def add_more_data(self, name: str, parts: dict[str, IO]):
+        data_path = self.storage_path / name
+        for part_name, part_stream in parts.items():
+            file_path = data_path / part_name
             with file_path.open('wb') as target_stream:
                 shutil.copyfileobj(part_stream, target_stream)
 
