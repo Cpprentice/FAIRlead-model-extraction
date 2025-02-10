@@ -7,9 +7,10 @@ from simpler_model.models.entity import Entity
 from simpler_model.models.entity_modifier import EntityModifier
 from simpler_model.models.format import Format
 from simpler_model.models.model_schema import ModelSchema
+from simpler_model.models.partition import Partition
 from simpler_model.models.relation import Relation
 from simpler_model.models.relation_modifier import RelationModifier
 
-SPECIFICATION_VERSION = '0.5.0'
+SPECIFICATION_VERSION = '0.7.0'
 
-__all__ = ['Attribute', 'AttributeModifier', 'Cardinality', 'DataSource', 'DataSourceTextDataInner', 'Entity', 'EntityModifier', 'Format', 'ModelSchema', 'Relation', 'RelationModifier', 'SPECIFICATION_VERSION']
+__all__ = ['Attribute', 'AttributeModifier', 'Cardinality', 'DataSource', 'DataSourceTextDataInner', 'Entity', 'EntityModifier', 'Format', 'ModelSchema', 'Partition', 'Relation', 'RelationModifier', 'SPECIFICATION_VERSION']

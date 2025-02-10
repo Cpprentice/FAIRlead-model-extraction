@@ -23,22 +23,19 @@ import json
 
 from pydantic import BaseModel, ConfigDict, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from simpler_model.models.data_source_text_data_inner import DataSourceTextDataInner
+from simpler_model.models.entity import Entity
 try:
     from typing import Self
 except ImportError:
     from typing_extensions import Self
 
-class DataSource(BaseModel):
+class Partition(BaseModel):
     """
-    DataSource
+    Partition
     """ # noqa: E501
-    id: StrictStr
-    plugin: StrictStr
-    description: Optional[StrictStr] = None
-    populated_input_fields: Optional[List[StrictStr]] = None
-    text_data: Optional[List[DataSourceTextDataInner]] = None
-    __properties: ClassVar[List[str]] = ["id", "plugin", "description", "populated_input_fields", "text_data"]
+    title: Optional[StrictStr] = None
+    entities: Optional[List[Entity]] = None
+    __properties: ClassVar[List[str]] = ["title", "entities"]
 
     model_config = {
         "populate_by_name": True,
@@ -58,7 +55,7 @@ class DataSource(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Self:
-        """Create an instance of DataSource from a JSON string"""
+        """Create an instance of Partition from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -77,18 +74,18 @@ class DataSource(BaseModel):
             },
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of each item in text_data (list)
+        # override the default output from pydantic by calling `to_dict()` of each item in entities (list)
         _items = []
-        if self.text_data:
-            for _item in self.text_data:
+        if self.entities:
+            for _item in self.entities:
                 if _item:
                     _items.append(_item.to_dict())
-            _dict['text_data'] = _items
+            _dict['entities'] = _items
         return _dict
 
     @classmethod
     def from_dict(cls, obj: Dict) -> Self:
-        """Create an instance of DataSource from a dict"""
+        """Create an instance of Partition from a dict"""
         if obj is None:
             return None
 
@@ -98,14 +95,11 @@ class DataSource(BaseModel):
         # raise errors for additional fields in the input
         for _key in obj.keys():
             if _key not in cls.__properties:
-                raise ValueError("Error due to additional fields (not defined in DataSource) in the input: " + _key)
+                raise ValueError("Error due to additional fields (not defined in Partition) in the input: " + _key)
 
         _obj = cls.model_validate({
-            "id": obj.get("id"),
-            "plugin": obj.get("plugin"),
-            "description": obj.get("description"),
-            "populated_input_fields": obj.get("populated_input_fields"),
-            "text_data": [DataSourceTextDataInner.from_dict(_item) for _item in obj.get("text_data")] if obj.get("text_data") is not None else None
+            "title": obj.get("title"),
+            "entities": [Entity.from_dict(_item) for _item in obj.get("entities")] if obj.get("entities") is not None else None
         })
         return _obj
 

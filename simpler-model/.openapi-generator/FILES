@@ -12,6 +12,7 @@ src/simpler_model/models/entity.py
 src/simpler_model/models/entity_modifier.py
 src/simpler_model/models/format.py
 src/simpler_model/models/model_schema.py
+src/simpler_model/models/partition.py
 src/simpler_model/models/relation.py
 src/simpler_model/models/relation_modifier.py
 tests/conftest.py
