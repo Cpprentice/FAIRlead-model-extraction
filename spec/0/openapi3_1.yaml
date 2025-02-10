@@ -10,7 +10,7 @@ info:
   license:
     name: MIT
     identifier: MIT
-  version: 0.6.0
+  version: 0.7.0
 externalDocs:
   description: Find out more about Swagger
   url: http://swagger.io
@@ -200,6 +200,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/preventOptimization'
         - $ref: '#/components/parameters/preventAutomaticOptimization'
+        - $ref: '#/components/parameters/preventUserOptimization'
         - $ref: '#/components/parameters/generateInverseRelations'
         # - $ref: '#/components/parameters/EntityPrefix'
       responses:
@@ -234,6 +235,7 @@ paths:
         - $ref: '#/components/parameters/schemaId'
         - $ref: '#/components/parameters/preventOptimization'
         - $ref: '#/components/parameters/preventAutomaticOptimization'
+        - $ref: '#/components/parameters/preventUserOptimization'
         - $ref: '#/components/parameters/generateInverseRelations'
       #   - $ref: '#/components/parameters/EntityPrefix'
       responses:
@@ -619,6 +621,7 @@ paths:
             default: 2
         - $ref: '#/components/parameters/preventOptimization'
         - $ref: '#/components/parameters/preventAutomaticOptimization'
+        - $ref: '#/components/parameters/preventUserOptimization'
         - $ref: '#/components/parameters/generateInverseRelations'
 
       responses:
@@ -633,7 +636,40 @@ paths:
                 type: string
         '404':
           description: schema not found
-      
+
+  /schemata/{schemaId}/partitioned-entities:
+    get:
+      tags:
+        - partition
+      description: desc
+      operationId: getPartitionedEntitiesBySchema
+      parameters:
+        - $ref: '#/components/parameters/schemaId'
+        - $ref: '#/components/parameters/preventOptimization'
+        - $ref: '#/components/parameters/preventAutomaticOptimization'
+        - $ref: '#/components/parameters/preventUserOptimization'
+        - $ref: '#/components/parameters/generateInverseRelations'
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Partition'
+            application/x-yaml:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Partition'
+            application/xml:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Partition'
+                xml:
+                  name: Partitions
   /schemata/{schemaId}/entities:
     get:
       tags:
@@ -646,7 +682,10 @@ paths:
         # - $ref: '#/components/parameters/EntityPrefix'
         - $ref: '#/components/parameters/preventOptimization'
         - $ref: '#/components/parameters/preventAutomaticOptimization'
+        - $ref: '#/components/parameters/preventUserOptimization'
         - $ref: '#/components/parameters/generateInverseRelations'
+        - $ref: '#/components/parameters/entityFilter'
+        - $ref: '#/components/parameters/entityFilterDistance'
       responses:
         '200':
           description: successful operation
@@ -680,6 +719,7 @@ paths:
         - $ref: '#/components/parameters/entityId'
         - $ref: '#/components/parameters/preventOptimization'
         - $ref: '#/components/parameters/preventAutomaticOptimization'
+        - $ref: '#/components/parameters/preventUserOptimization'
         - $ref: '#/components/parameters/generateInverseRelations'
       responses:
         '200':
@@ -732,6 +772,13 @@ components:
         type: boolean
         default: false
       required: false
+    preventUserOptimization:
+      name: preventUserOptimization
+      in: query
+      schema:
+        type: boolean
+        default: false
+      required: false
     generateInverseRelations:
       name: generateInverseRelations
       in: query
@@ -740,10 +787,28 @@ components:
         type: boolean
         default: false
       required: false
+    entityFilter:
+      name: entityFilter
+      in: query
+      description: Only list entities of the schema that are in range of the specified entities
+      schema:
+        type: array
+        items:
+          type: string
+        default: []
+      required: false
+    entityFilterDistance:
+      name: entityFilterDistance
+      in: query
+      description: Specifies the search distance if entityFilter is used
+      schema:
+        type: integer
+        default: 1
+      required: false
     entityId:
       name: entityId
       in: path
-      description: ID of entity to return
+      description: ID of entity to access
       required: true
       schema:
         type: string
@@ -848,6 +913,17 @@ components:
           type: array
           items:
             type: string
+    Partition:
+      type: object
+      properties:
+        title:
+          type: string
+          examples:
+            - Partition 1
+        entities:
+          type: array
+          items:
+            $ref: 'json-schema/Entity.json'
     Schema:
       type: object
       properties:
