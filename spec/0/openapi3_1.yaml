@@ -10,7 +10,7 @@ info:
   license:
     name: MIT
     identifier: MIT
-  version: 0.5.0
+  version: 0.6.0
 externalDocs:
   description: Find out more about Swagger
   url: http://swagger.io
@@ -251,6 +251,343 @@ paths:
                 $ref: '#/components/schemas/Schema'
         '404':
           description: 'not found'
+  # thoughts on the new corrections api
+  # /schemata/{schemaId}/corrections -> get or post yaml|json|xml of partial
+  # /schemata/{schemaId}/corrections/(entities/)?{entityId}/attributes/{attributeId} DELETE OR PUT for removal or update (of just the name?)
+  # DELETE is overkill -> setting name to empty is enough
+  #
+  # operations we need:
+  # - rename or delete attribute (needs current entity name, active attribute name, new attribute name) POST /schemata/{schemaId}/corrections/entities/{entityId}/attributes/{attributeName} BODY new name
+  # - add or remove attribute key flag (needs current entity name, active attribute name, flag name and value) PUT /schemata/{schemaId}/corrections/entities/{entityId}/attributes/{attributeName}/modifiers BODY {key:value}pairs
+  # - add a new attribute (though not sure how this can be filled with data (constant or something) (needs target entity name, full Attribute object) POST /schemata/{schemaId}/corrections/entities/{entityId}/attributes  BODY attribute object
+  # - rename or delete entity (needs current entity name, new entity name) POST /schemata/{schemaId}/corrections/entities/{entityId} BODY new name
+  # - add or remove entity weakness flag (needs active entity name, flag name and value) PUT /schemata/{schemaId}/corrections/entities/{entityId}/modifiers BODY key value pairs
+  # - add a new entity (needs the full entity object) POST /schemata/{schemaId}/corrections/entities BODY entity object
+  # - rename or delete a relation (needs the subject entity name, the current relation name, the new relation name) POST /schemata/{schemaId}/corrections/entities/{entityId}/relations/{relationName} BODY new name
+  # - add or remove relation flag (needs the subject entity name, the relation name, the flag name and value) PUT /schemata/{schemaId}/corrections/entities/{entityId}/relations/{relationName}/modifiers BODY {key:value}pairs
+  # - add a new relation (needs the subject entity name, the new relation object)  POST /schemata/{schemaId}/corrections/entities/{entityId}/relations BODY relation object
+  /schemata/{schemaId}/corrections/entities:
+    post:
+      tags:
+        - correction
+      summary: Add an entirely new entity
+      description: Add an entirely new entity
+      operationId: addNewEntityCorrection
+      parameters:
+        - $ref: '#/components/parameters/schemaId'
+      requestBody:
+        description: A new entity object
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'json-schema/Entity.json'
+          application/x-yaml:
+            schema:
+              $ref: 'json-schema/Entity.json'
+          application-xml:
+            schema:
+              $ref: 'json-schema/Entity.json'
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: bad request
+          content:
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: schema not found
+  /schemata/{schemaId}/corrections/entities/{entityId}:
+    post:
+      tags:
+        - correction
+      summary: change entity name
+      description: change entity name
+      operationId: changeEntityNameCorrection
+      parameters:
+        - $ref: '#/components/parameters/schemaId'
+        - $ref: '#/components/parameters/entityId'
+      requestBody:
+        description: new name as plain string
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: bad request
+          content:
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: schema or entity not found
+  /schemata/{schemaId}/corrections/entities/{entityId}/modifiers:
+    put:
+      tags:
+        - correction
+      summary: Update entity modifiers
+      description: Update entity modifiers
+      operationId: updateEntityModifiersCorrection
+      parameters:
+        - $ref: '#/components/parameters/schemaId'
+        - $ref: '#/components/parameters/entityId'
+      requestBody:
+        description: list of EntityModifier objects
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: 'json-schema/EntityModifier.json'
+          application/x-yaml:
+            schema:
+              type: array
+              items:
+                $ref: 'json-schema/EntityModifier.json'
+          application-xml:
+            schema:
+              type: array
+              items:
+                $ref: 'json-schema/EntityModifier.json'
+              xml:
+                name: EntityModifiers
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: bad request
+          content:
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: schema or entity not found
+
+
+  /schemata/{schemaId}/corrections/entities/{entityId}/attributes:
+    post:
+      tags:
+        - correction
+      summary: Add an entirely new attribute
+      description: Add an entirely new attribute
+      operationId: addNewAttributeCorrection
+      parameters:
+        - $ref: '#/components/parameters/schemaId'
+        - $ref: '#/components/parameters/entityId'
+      requestBody:
+        description: A new attribute object
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'json-schema/Attribute.json'
+          application/x-yaml:
+            schema:
+              $ref: 'json-schema/Attribute.json'
+          application-xml:
+            schema:
+              $ref: 'json-schema/Attribute.json'
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: bad request
+          content:
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: schema or entity not found
+  /schemata/{schemaId}/corrections/entities/{entityId}/attributes/{attributeId}:
+    post:
+      tags:
+        - correction
+      summary: change attribute name
+      description: change attribute name
+      operationId: changeAttributeNameCorrection
+      parameters:
+        - $ref: '#/components/parameters/schemaId'
+        - $ref: '#/components/parameters/entityId'
+        - $ref: '#/components/parameters/attributeId'
+      requestBody:
+        description: new name as plain string
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: bad request
+          content:
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: schema, entity or attribute not found
+  /schemata/{schemaId}/corrections/entities/{entityId}/attributes/{attributeId}/modifiers:
+    put:
+      tags:
+        - correction
+      summary: Update attribute modifiers
+      description: Update attribute modifiers
+      operationId: updateAttributeModifiersCorrection
+      parameters:
+        - $ref: '#/components/parameters/schemaId'
+        - $ref: '#/components/parameters/entityId'
+        - $ref: '#/components/parameters/attributeId'
+      requestBody:
+        description: list of AttributeModifier objects
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: 'json-schema/AttributeModifier.json'
+          application/x-yaml:
+            schema:
+              type: array
+              items:
+                $ref: 'json-schema/AttributeModifier.json'
+          application-xml:
+            schema:
+              type: array
+              items:
+                $ref: 'json-schema/AttributeModifier.json'
+              xml:
+                name: AttributeModifiers
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: bad request
+          content:
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: schema, entity or attribute not found
+
+
+
+  /schemata/{schemaId}/corrections/entities/{entityId}/relations:
+    post:
+      tags:
+        - correction
+      summary: Add an entirely new relation
+      description: Add an entirely new relation
+      operationId: addNewRelationCorrection
+      parameters:
+        - $ref: '#/components/parameters/schemaId'
+        - $ref: '#/components/parameters/entityId'
+      requestBody:
+        description: A new relation object
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'json-schema/Relation.json'
+          application/x-yaml:
+            schema:
+              $ref: 'json-schema/Relation.json'
+          application-xml:
+            schema:
+              $ref: 'json-schema/Relation.json'
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: bad request
+          content:
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: schema or entity not found
+  /schemata/{schemaId}/corrections/entities/{entityId}/relations/{relationId}:
+    post:
+      tags:
+        - correction
+      summary: change relation name
+      description: change relation name
+      operationId: changeRelationNameCorrection
+      parameters:
+        - $ref: '#/components/parameters/schemaId'
+        - $ref: '#/components/parameters/entityId'
+        - $ref: '#/components/parameters/relationId'
+      requestBody:
+        description: new name as plain string
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: bad request
+          content:
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: schema, entity or relation not found
+  /schemata/{schemaId}/corrections/entities/{entityId}/relations/{relationId}/modifiers:
+    put:
+      tags:
+        - correction
+      summary: Update relation modifiers
+      description: Update relation modifiers
+      operationId: updateRelationModifiersCorrection
+      parameters:
+        - $ref: '#/components/parameters/schemaId'
+        - $ref: '#/components/parameters/entityId'
+        - $ref: '#/components/parameters/relationId'
+      requestBody:
+        description: list of RelationModifier objects
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: 'json-schema/RelationModifier.json'
+          application/x-yaml:
+            schema:
+              type: array
+              items:
+                $ref: 'json-schema/RelationModifier.json'
+          application-xml:
+            schema:
+              type: array
+              items:
+                $ref: 'json-schema/RelationModifier.json'
+              xml:
+                name: RelationModifiers
+      responses:
+        '200':
+          description: successful operation
+        '400':
+          description: bad request
+          content:
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: schema, entity or relation not found
+
+
   /schemata/{schemaId}/diagram:
     get:
       tags:
@@ -414,6 +751,20 @@ components:
       name: schemaId
       in: path
       description: ID of schema to access
+      required: true
+      schema:
+        type: string
+    attributeId:
+      name: attributeId
+      in: path
+      description: ID of attribute to access
+      required: true
+      schema:
+        type: string
+    relationId:
+      name: relationId
+      in: path
+      description: ID of relation to access
       required: true
       schema:
         type: string
