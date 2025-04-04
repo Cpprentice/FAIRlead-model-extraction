@@ -8,7 +8,7 @@ from typing import BinaryIO, List, TextIO, Tuple, Sequence, get_origin, get_args
 
 import rdflib
 import yaml
-from pydantic import BaseModel, BaseConfig, PydanticUndefinedAnnotation, create_model
+from pydantic import BaseModel, BaseConfig, PydanticUndefinedAnnotation, create_model, ValidationError
 from pydantic.v1.utils import deep_update
 from pydantic_core.core_schema import ModelField
 from pydantic_partial import create_partial_model
@@ -139,6 +139,8 @@ replace_annotations(PartialEntity)
 
 def load_partial_schema_from_yaml(binary_stream: BinaryIO) -> List[PartialEntity]:
     entity_data_list = yaml.safe_load(binary_stream)
+    if entity_data_list is None:
+        return []
     return [
         PartialEntity.model_validate(entity_extension_data)
         for entity_extension_data in entity_data_list
@@ -154,8 +156,17 @@ def serialize_partial_schema_to_yaml(entities: list[PartialEntity], target_strea
     return yaml.safe_dump(dicts, target_stream)
 
 
+def get_user_schema_correction(schema_name: str, storage: DataSourceStorage) -> list[PartialEntity]:
+    with storage.get_data(schema_name) as stream_lookup:
+        if schema_correction_file_name in stream_lookup:
+            return load_partial_schema_from_yaml(stream_lookup[schema_correction_file_name])
+    return []
+
+
 def extend_schema_from_yaml(entities: List[Entity], binary_stream: BinaryIO) -> List[Entity]:
     entity_extension_data_list = yaml.safe_load(binary_stream)
+    if entity_extension_data_list is None:
+        return entities
     partial_entities = [
         PartialEntity.model_validate(entity_extension_data)
         for entity_extension_data in entity_extension_data_list
@@ -169,7 +180,28 @@ def extend_schema_from_yaml(entities: List[Entity], binary_stream: BinaryIO) -> 
     #  as the names are not keys of the dict but stored in lists. The following implementation attempts to
     #  honor the name overwrite pattern accordingly
     merged_dict_list = merge_schema_lists(entity_dict_list, update_dict_list)
-    result_entities = [Entity(**x) for x in merged_dict_list]
+
+    original_entity_lookup = {
+        tuple(entity_data['entity_name']): entity
+        for entity_data in merged_dict_list
+        for entity in entities
+        if is_super_set_of(entity.entity_name, entity_data['entity_name'])
+    }
+
+    # TODO we might need to change this back
+    result_entities = []
+    original_entities_added = set()
+    for entity_data in merged_dict_list:
+        try:
+            entity = Entity(**entity_data)
+            result_entities.append(entity)
+        except ValidationError:
+            entity = original_entity_lookup[tuple(entity_data['entity_name'])]
+            entity_name_tuple = tuple(entity.entity_name)
+            if entity_name_tuple not in original_entities_added:
+                result_entities.append(entity)
+                original_entities_added.add(entity_name_tuple)
+    # result_entities = [Entity(**x) for x in merged_dict_list]
     return result_entities
 
 
@@ -314,6 +346,52 @@ def merge_schema_lists(base_list: List, update_list: List, no_deletes=False) -> 
     return result_list
 
 
+def multi_merge_schema_lists(item_lists: list[list], no_deletes=False) -> List:
+    non_empty_item_lists = [item_list for item_list in item_lists if item_list]
+    if len(non_empty_item_lists) == 1:
+        return non_empty_item_lists[0]
+    if len(non_empty_item_lists) == 0:
+        return []
+
+    name_key = get_name_key(non_empty_item_lists[0])
+    if name_key is None:
+        # this does simply represent lists and not named concepts - since the input should be already ordered we just
+        #  return the last value
+        return item_lists[-1]
+    keys = get_precedence_keys_from_dicts(non_empty_item_lists, name_key)
+
+    # Can we already infer an order from this?
+    lookup = collections.defaultdict(list)
+    for key in keys:
+        for item_list in non_empty_item_lists:
+            for item in item_list:
+                if is_super_set_of(item[name_key], key):
+                    lookup[key].append(item)
+
+    result_list = []
+    for key, items in lookup.items():
+        if len(items) == 1:
+            result_list.append(items[0])
+            continue
+        items.sort(key=lambda x: len(x[name_key]))  # this should sort changes according to apply order
+        deletion = False
+        result = multi_merge_schema_dicts(items, no_deletes)
+        if result[name_key][0] is None and not no_deletes:
+            deletion = True
+        # while len(items) > 1:
+        #     base = items[0]
+        #     update = items[1]
+        #     result = multi_merge_schema_dicts(base, update, no_deletes)
+        #     if result[name_key][0] is None and not no_deletes:
+        #         deletion = True
+        #         items = []
+        #     else:
+        #         items = [result, *items[2:]]
+        if not deletion:
+            result_list.append(result)
+    return result_list
+
+
 def introduce_inverse_relations(entities: List[Entity]):
     # TODO shouldn't we model this with some kine of reasoning instead?
     entity_lookup = {
@@ -368,26 +446,99 @@ def merge_schema_dicts(base_dict: Dict, update_dict: Dict, no_deletes=False) -> 
     return result
 
 
+def _remove_consecutive_duplicates(items: list) -> list:
+    if not items:
+        return items
+    result = [items[0]]
+    for item in items[1:]:
+        if item != result[-1]:
+            result.append(item)
+    return result
+
+
+def multi_merge_schema_dicts(dictionaries: list[dict], no_deletes=False) -> dict:
+    result = {}
+    combined_key_set = {key for schema_dict in dictionaries if schema_dict is not None for key in schema_dict.keys()}
+    for key in combined_key_set:
+        values = [
+            schema_dict[key]
+            for schema_dict in dictionaries
+            if schema_dict is not None
+            and key in schema_dict
+        ]
+        values = _remove_consecutive_duplicates(values)
+        if len(values) == 1:
+            result[key] = values[0]
+        elif any(isinstance(value, list) for value in values):
+            result[key] = multi_merge_schema_lists(values, no_deletes)
+        elif any(isinstance(value, dict) for value in values):
+            result[key] = multi_merge_schema_dicts(values, no_deletes)
+        else:
+            # in this case we do have scalar values that can not be "deleted" so we use the last non falsy value
+            non_falsy_values = [x for x in values if x]
+            result[key] = non_falsy_values[-1] if len(non_falsy_values) > 0 else None
+            # values = _remove_consecutive_duplicates(values)
+            # if values[0] is None:
+            #     result[key] = values[-1]
+    return result
+
+    for key, original_value in base_dict.items():
+        if key in update_dict:
+            if original_value is None:
+                result[key] = update_dict[key]
+            elif isinstance(original_value, list):
+                result[key] = merge_schema_lists(original_value, update_dict[key], no_deletes)
+            elif isinstance(original_value, dict):
+                result[key] = merge_schema_dicts(original_value, update_dict[key], no_deletes)
+            else:
+                result[key] = update_dict[key]
+        else:
+            result[key] = original_value
+    for key, update_value in update_dict.items():
+        if key not in result:
+            result[key] = update_value
+    return result
+
+
+def multi_merge(entity_lists: list[list[PartialEntity]]) -> list[Entity]:
+    merged_dict_list = multi_merge_schema_lists([
+        [
+            entity.model_dump()
+            if isinstance(entity, Entity) else
+            entity.model_dump(exclude_defaults=True)
+            for entity in entity_list
+        ]
+        for entity_list in entity_lists
+    ])
+    return [Entity(**x) for x in merged_dict_list]
+
+
 def optimize_schema(entities: List[Entity]):
     entity_lookup = {entity.entity_name[0]: entity for entity in entities}
+    attribute_tuples = [
+        (entity, entity.entity_name[0], attribute, attribute.attribute_name[0])
+        for entity in entities
+        for attribute in entity.has_attribute
+    ]
 
     # Apply certain patterns to improve detected content
     #  This probably also works like a reasoner (that also deletes the old stuff?!)
-    graph = build_graph(entities)
-    ero = Namespace(graph.namespace_manager.store.namespace('ero'))
-
-    results = graph.query("""
-    SELECT ?entity ?entity_name ?attribute ?attribute_name
-    WHERE {
-        ?entity a ero:Entity ;
-                ero:entityName ?entity_name ;
-                ero:hasAttribute ?attribute .
-        ?attribute ero:attributeName ?attribute_name .
-    }
-    """)
+    # graph = build_graph(entities)
+    # ero = Namespace(graph.namespace_manager.store.namespace('ero'))
+    #
+    # results = graph.query("""
+    # SELECT ?entity ?entity_name ?attribute ?attribute_name
+    # WHERE {
+    #     ?entity a ero:Entity ;
+    #             ero:entityName ?entity_name ;
+    #             ero:hasAttribute ?attribute .
+    #     ?attribute ero:attributeName ?attribute_name .
+    # }
+    # """)
     attribute_names_by_entity_name = collections.defaultdict(list)
     entity_names_by_attribute_name = collections.defaultdict(list)
-    for entity, entity_name, attribute, attribute_name in results:
+    # for entity, entity_name, attribute, attribute_name in results:
+    for entity, entity_name, attribute, attribute_name in attribute_tuples:
         attribute_names_by_entity_name[str(entity_name)].append(str(attribute_name))
         entity_names_by_attribute_name[str(attribute_name)].append(str(entity_name))
 
@@ -468,13 +619,13 @@ def optimize_schema(entities: List[Entity]):
     #         )
 
 
-    results = graph.query("""
-    SELECT ?attribute ?value
-    WHERE {
-        ?attribute a ero:Attribute ;
-    
-    }
-    """)
+    # results = graph.query("""
+    # SELECT ?attribute ?value
+    # WHERE {
+    #     ?attribute a ero:Attribute ;
+    #
+    # }
+    # """)
 
 
 path_separator = '$'
@@ -505,6 +656,10 @@ def convert_path_separator(path: str, new_separator: str) -> str:
     return path.replace(path_separator, new_separator)
 
 
+class RenamingError(Exception):
+    ...
+
+
 class SchemaModdingContext:
     def __init__(self, storage: DataSourceStorage, schema_id: str):
         self.entities: list[PartialEntity] = []
@@ -523,16 +678,46 @@ class SchemaModdingContext:
                 return entity
         return None
 
+    def _find_latest_entity(self, current_active_name: str) -> PartialEntity | None:
+        entities = self._find_latest_entity_relatives(current_active_name)
+        if entities:
+            return entities[-1]
+        return None
+
+    def _find_entity_relatives(self, current_active_name: str) -> list[PartialEntity]:
+        entities = [
+            entity
+            for entity in self.entities
+            if current_active_name in entity.entity_name
+        ]
+        if entities:
+            entities.sort(key=lambda x: len(x.entity_name))
+        return entities
+
+    def _find_latest_entity_relatives(self, current_active_name: str) -> list[PartialEntity]:
+        entities = [
+            entity
+            for entity in self.entities
+            if current_active_name == entity.entity_name[0]
+        ]
+        if entities:
+            entities.sort(key=lambda x: len(x.entity_name))
+        return entities
+
     def combine_and_persist(self):
-        entity_dict_list = [x.model_dump(exclude_defaults=True) for x in self.entities]
-        update_dict_list = [x.model_dump(exclude_defaults=True) for x in self.modification_entities]
+        # entity_dict_list = [x.model_dump(exclude_defaults=True) for x in self.entities]
+        # update_dict_list = [x.model_dump(exclude_defaults=True) for x in self.modification_entities]
 
         # A first attempt was using the deep_merge function from pydantic
         #  However, updating a dict will never properly work for the merging of entities with name overwrites
         #  as the names are not keys of the dict but stored in lists. The following implementation attempts to
         #  honor the name overwrite pattern accordingly
-        merged_dict_list = merge_schema_lists(entity_dict_list, update_dict_list, no_deletes=True)
-        result_entities = [PartialEntity(**x) for x in merged_dict_list]
+
+        # In the context of user corrections we switched to not combining the entities but keep a separate one for each
+        #  user modification to better handle ordering of the individual operations
+        # merged_dict_list = merge_schema_lists(entity_dict_list, update_dict_list, no_deletes=True)
+        # result_entities = [PartialEntity(**x) for x in merged_dict_list]
+        result_entities = self.entities + self.modification_entities
         yaml_string = serialize_partial_schema_to_yaml(result_entities)
         yaml_byte_stream = io.BytesIO(yaml_string.encode('utf-8'))
         self.storage.add_more_data(self.schema_id, {schema_correction_file_name: yaml_byte_stream})
@@ -588,25 +773,66 @@ class SchemaModdingContext:
                 return relation
         return None
 
+    @staticmethod
+    def _find_relation_relatives_from_entities(entities: list[PartialEntity], search_name: str) -> list[PartialRelation]:
+        relations = []
+        for entity in entities:
+            if entity.is_subject_in_relation is not None:
+                for relation in entity.is_subject_in_relation:
+                    if search_name in relation.relation_name:
+                        relations.append(relation)
+        relations.sort(key=lambda x: len(x.relation_name))
+        return relations
+
     def rename_relation(self, current_entity_name: str, current_relation_name: str, new_relation_name: str):
         if current_relation_name == new_relation_name:
             return
-        existing_entity_correction = self._find_entity(current_entity_name)
-        if existing_entity_correction is None:
-            existing_entity_correction = PartialEntity(entity_name=[current_entity_name])
-            self.modification_entities.append(existing_entity_correction)
 
-        existing_relation_correction = self._find_relation(
-            existing_entity_correction.is_subject_in_relation,
+        existing_entity_corrections = self._find_entity_relatives(current_entity_name)
+        if not existing_entity_corrections:
+            existing_entity_correction = PartialEntity(entity_name=[current_entity_name])
+            existing_entity_corrections = [existing_entity_correction]
+
+        # existing_entity_correction = self._find_latest_entity(current_entity_name)
+        # if existing_entity_correction is None:
+        #     existing_entity_correction = PartialEntity(entity_name=[current_entity_name])
+        #     self.modification_entities.append(existing_entity_correction)
+        existing_relation_corrections = self._find_relation_relatives_from_entities(
+            existing_entity_corrections,
             current_relation_name
         )
-        if existing_relation_correction is None:
-            existing_relation_correction = PartialRelation(relation_name=[current_relation_name])
-            if existing_entity_correction.is_subject_in_relation is None:
-                existing_entity_correction.is_subject_in_relation = []
-            existing_entity_correction.is_subject_in_relation.append(existing_relation_correction)
+        if not existing_relation_corrections:
+            existing_relation_corrections = [PartialRelation(relation_name=[current_relation_name])]
 
-        existing_relation_correction.relation_name = [
-            new_relation_name,
-            *existing_relation_correction.relation_name
-        ]
+        latest_entity_name = existing_entity_corrections[-1].entity_name
+        latest_relation_name = existing_relation_corrections[-1].relation_name
+
+        self.modification_entities.append(PartialEntity(entity_name=latest_entity_name, is_subject_in_relation=[
+            PartialRelation(relation_name=[
+                new_relation_name,
+                *latest_relation_name
+            ])
+        ]))
+
+        # existing_relation_corrections = []
+        # for entity in existing_entity_corrections:
+        #     existing_relation_correction = self._find_relation(
+        #         entity.is_subject_in_relation,
+        #         current_relation_name
+        #     )
+        #     if existing_relation_correction is not None:
+        #         existing_relation_corrections.append(existing_relation_correction)
+        # if not existing_relation_corrections:
+        #     existing_relation_corrections = [PartialRelation(relation_name=[current_relation_name])]
+
+        # if existing_relation_correction is None:
+        #     raise RenamingError()
+        #     existing_relation_correction = PartialRelation(relation_name=[current_relation_name])
+        #     if existing_entity_correction.is_subject_in_relation is None:
+        #         existing_entity_correction.is_subject_in_relation = []
+        #     existing_entity_correction.is_subject_in_relation.append(existing_relation_correction)
+
+        # existing_relation_correction.relation_name = [
+        #     new_relation_name,
+        #     *existing_relation_correction.relation_name
+        # ]

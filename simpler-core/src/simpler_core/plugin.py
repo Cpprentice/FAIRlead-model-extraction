@@ -6,7 +6,8 @@ from typing import ClassVar, List, Tuple, Type, Dict, Callable
 
 from pydantic import BaseModel, Field
 
-from simpler_core.schema import apply_schema_correction_if_available, optimize_schema, introduce_inverse_relations
+from simpler_core.schema import apply_schema_correction_if_available, optimize_schema, introduce_inverse_relations, \
+    get_user_schema_correction, multi_merge
 from simpler_core.storage import DataSourceStorage
 try:
     from simpler_model import Entity, Relation
@@ -151,8 +152,19 @@ class DataSourceCursor:
         entities = self.plugin.get_all_entities(self.name)
         if not self.settings.prevent_optimization:
             if not self.settings.prevent_user_optimization:
-                entities = apply_schema_correction_if_available(entities, self.plugin.storage, self.name)
-            if not self.settings.prevent_automatic_optimization:
+                user_pre_modded_entities = apply_schema_correction_if_available(entities, self.plugin.storage, self.name)
+
+                if not self.settings.prevent_automatic_optimization:
+                    original_copy = entities.copy()
+                    pre_modded_copy = user_pre_modded_entities.copy()
+                    optimize_schema(original_copy)
+                    optimize_schema(pre_modded_copy)
+                    user_mods = get_user_schema_correction(self.name, self.plugin.storage)
+                    entities = multi_merge([entities, user_pre_modded_entities, original_copy, pre_modded_copy, user_mods])
+
+                else:
+                    entities = user_pre_modded_entities
+            elif not self.settings.prevent_automatic_optimization:
                 optimize_schema(entities)
             if self.settings.generate_inverse_relations:
                 introduce_inverse_relations(entities)
