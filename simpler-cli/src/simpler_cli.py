@@ -108,7 +108,7 @@ def extract_command(args: Namespace, parser: ArgumentParser):
             for input_name, input_path in [input_string.split(':')]
         })
     })
-    plugin = class_(storage, lambda *args, **kwargs: 'file:///blub')
+    plugin = class_(storage)
     optimization_settings = OptimizationSettings(
         prevent_optimization=args.prevent_optimization,
         prevent_automatic_optimization=args.prevent_automatic_optimization,

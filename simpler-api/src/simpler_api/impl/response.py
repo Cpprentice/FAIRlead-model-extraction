@@ -2,7 +2,9 @@ from typing import Any
 
 import yaml
 from fastapi import Request, Response
+from linkml_runtime.utils.yamlutils import as_yaml
 
+from simpler_core.linkml_schema import convert_er_to_linkml
 from simpler_core.rdf import build_owl
 
 
@@ -16,5 +18,8 @@ def wrap_response_according_to_accept_header(request: Request, response: Any) ->
     elif requested_data_type == 'text/turtle':
         owl_string = build_owl(response, f'{request.url}/')  # TODO consider a better way to get the URL. We might miss the "entities" path part
         return Response(owl_string, media_type='text/turtle')
+    elif requested_data_type == 'application/x.linkml+yaml':
+        schema = convert_er_to_linkml(response)
+        return Response(as_yaml(schema), media_type='application/x.linkml+yaml')
     else:
         return response
