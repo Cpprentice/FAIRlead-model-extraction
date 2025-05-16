@@ -15,6 +15,8 @@ src/simpler_api/apis/partition_api.py
 src/simpler_api/apis/partition_api_base.py
 src/simpler_api/apis/schema_api.py
 src/simpler_api/apis/schema_api_base.py
+src/simpler_api/apis/semantics_api.py
+src/simpler_api/apis/semantics_api_base.py
 src/simpler_api/impl/__init__.py
 src/simpler_api/main.py
 src/simpler_api/models/__init__.py

@@ -25,6 +25,7 @@ from simpler_api.apis.entity_api import router as EntityApiRouter
 from simpler_api.apis.format_api import router as FormatApiRouter
 from simpler_api.apis.partition_api import router as PartitionApiRouter
 from simpler_api.apis.schema_api import router as SchemaApiRouter
+from simpler_api.apis.semantics_api import router as SemanticsApiRouter
 
 app = FastAPI(
     title="Schema API - OpenAPI 3.1",
@@ -38,5 +39,6 @@ app.include_router(EntityApiRouter)
 app.include_router(FormatApiRouter)
 app.include_router(PartitionApiRouter)
 app.include_router(SchemaApiRouter)
+app.include_router(SemanticsApiRouter)
 
 on_app_created(app)

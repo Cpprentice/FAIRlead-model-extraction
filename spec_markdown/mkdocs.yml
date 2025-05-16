@@ -1,0 +1,4 @@
+site_name: FAIRlead Model Documentation
+site_url: https://localhost:7373/semantics/ontology/docs
+theme:
+  name: material

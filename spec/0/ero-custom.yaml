@@ -1,0 +1,171 @@
+name: ''
+description: ''
+id: http://iai.kit.edu/vocabularies/entity-relationship-ontology/
+imports:
+- linkml:types
+prefixes:
+  linkml: https://w3id.org/linkml/
+  ero: http://iai.kit.edu/vocabularies/entity-relationship-ontology/
+  # ? ''
+  # : https://w3id.org/None/
+default_prefix: 'ero'
+enums:
+  Cardinality:
+    enum_uri: :Cardinality
+    permissible_values:
+      any:
+        meaning: :any
+      exactlyOne:
+        meaning: :exactlyOne
+      oneOrMore:
+        meaning: :oneOrMore
+      oneOrNone:
+        meaning: :oneOrNone
+slots:
+  hasAttribute:
+    slot_uri: :hasAttribute
+    range: Attribute
+    multivalued: true
+    inlined: true
+    inlined_as_list: true
+  hasAttributeModifier:
+    is_a: hasModifier
+    slot_uri: :hasAttributeModifier
+    range: AttributeModifier
+    multivalued: true
+  hasEntityModifier:
+    is_a: hasModifier
+    slot_uri: :hasEntityModifier
+    range: EntityModifier
+    multivalued: true
+  hasModifier:
+    range: Modifier
+    slot_uri: :hasModifier
+    multivalued: true
+  hasObjectEntity:
+    slot_uri: :hasObjectEntity
+    range: Entity
+    multivalued: true
+  hasRelationModifier:
+    is_a: hasModifier
+    slot_uri: :hasRelationModifier
+    range: RelationModifier
+    multivalued: true
+  hasSubjectEntity:
+    slot_uri: :hasSubjectEntity
+    range: Entity
+    multivalued: true
+  inverseRelation:
+    slot_uri: :inverseRelation
+    range: Relation
+    multivalued: true
+  isAttributeOf:
+    slot_uri: :isAttributeOf
+    range: Relation
+    # multivalued: true
+  isObjectInRelation:
+    slot_uri: :isObjectInRelation
+    range: Relation
+    multivalued: true
+  isSubjectInRelation:
+    slot_uri: :isSubjectInRelation
+    range: Relation
+    multivalued: true
+  objectCardinality:
+    slot_uri: :objectCardinality
+    range: Cardinality
+    multivalued: true
+  subjectCardinality:
+    slot_uri: :subjectCardinality
+    range: Cardinality
+    multivalued: true
+  attributeName:
+    slot_uri: :attributeName
+    range: string
+    multivalued: true
+  entityName:
+    slot_uri: :entityName
+    multivalued: true
+    range: string
+  entityUrl:
+    slot_uri: :entityUrl
+    identifier: true
+    range: uriorcurie
+    # multivalued: true
+  relationName:
+    slot_uri: :relationName
+    multivalued: true
+    range: string
+classes:
+  Attribute:
+    slots:
+    - hasAttributeModifier
+    - isAttributeOf
+    - attributeName
+    slot_usage:
+      # isAttributeOf:
+      #   required: true
+      #   multivalued: false
+      attributeName:
+        required: true
+    class_uri: :Attribute
+  AttributeModifier:
+    is_a: Modifier
+    class_uri: :AttributeModifier
+  # Cardinality:
+  #   class_uri: :Cardinality
+  Entity:
+    slots:
+    - hasAttribute
+    - hasEntityModifier
+    - isObjectInRelation
+    - isSubjectInRelation
+    - entityName
+    - entityUrl
+    slot_usage:
+      entityName:
+        required: true
+      entityUrl:
+        multivalued: false
+    class_uri: :Entity
+  EntityModifier:
+    is_a: Modifier
+    class_uri: :EntityModifier
+  Modifier:
+    class_uri: :Modifier
+  Relation:
+    slots:
+    - hasAttribute
+    - hasObjectEntity
+    - hasRelationModifier
+    - hasSubjectEntity
+    - inverseRelation
+    - objectCardinality
+    - subjectCardinality
+    - relationName
+    slot_usage:
+      hasObjectEntity:
+        required: true
+        multivalued: false
+      hasSubjectEntity:
+        required: true
+        multivalued: false
+      objectCardinality:
+        required: true
+        multivalued: false
+      subjectCardinality:
+        required: true
+        multivalued: false
+      inverseRelation:
+        multivalued: false
+      relationName:
+        required: true
+    class_uri: :Relation
+  RelationModifier:
+    is_a: Modifier
+    class_uri: :RelationModifier
+  # ConcreteIndividualType:
+  #   class_uri: http://purl.org/nemo/gufo#ConcreteIndividualType
+  # RelationshipType:
+  #   class_uri: http://purl.org/nemo/gufo#RelationshipType
+

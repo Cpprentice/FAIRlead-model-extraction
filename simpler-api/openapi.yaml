@@ -706,6 +706,62 @@ paths:
       summary: Get a specific entity
       tags:
       - entity
+  /semantics/ontology:
+    get:
+      description: desc
+      operationId: getOntology
+      responses:
+        "200":
+          content:
+            text/html:
+              schema:
+                type: string
+            text/turtle:
+              schema:
+                type: string
+          description: successful operation
+      summary: Get the ERO ontology
+      tags:
+      - semantics
+  /semantics/ontology/{concept}:
+    get:
+      description: desc
+      operationId: getConcept
+      parameters:
+      - explode: false
+        in: path
+        name: concept
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            text/html:
+              schema:
+                type: string
+            text/turtle:
+              schema:
+                type: string
+          description: successful operation
+      summary: Get the ontology or the concept docs
+      tags:
+      - semantics
+  /semantics/jsonld-context:
+    get:
+      description: desc
+      operationId: getJsonldContext
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: string
+          description: successful operation
+      summary: Get the ERO ontology jsonld context
+      tags:
+      - semantics
 components:
   parameters:
     dataSourceId:

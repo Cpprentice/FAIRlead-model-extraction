@@ -14,3 +14,6 @@ def on_app_created(app: FastAPI):
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    app.mount('/semantics/ontology/docs', StaticFiles(directory='simpler-api/static/ontology-docs', html=True), name='onto-docs')
+    app.mount('/semantics/static', StaticFiles(directory='simpler-api/static/raw'), name='raw-files')
