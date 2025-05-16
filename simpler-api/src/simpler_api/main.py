@@ -14,9 +14,11 @@
 
 
 from fastapi import FastAPI
-from starlette.middleware.cors import CORSMiddleware
+try:
+    from simpler_api.impl.preload import on_app_created
+except ImportError:
+    def on_app_created(x): return
 
-from simpler_core.settings import Settings
 from simpler_api.apis.correction_api import router as CorrectionApiRouter
 from simpler_api.apis.data_source_api import router as DataSourceApiRouter
 from simpler_api.apis.entity_api import router as EntityApiRouter
@@ -24,7 +26,6 @@ from simpler_api.apis.format_api import router as FormatApiRouter
 from simpler_api.apis.partition_api import router as PartitionApiRouter
 from simpler_api.apis.schema_api import router as SchemaApiRouter
 
-settings = Settings()
 app = FastAPI(
     title="Schema API - OpenAPI 3.1",
     description="This is a Schema extraction API based on the OpenAPI 3.1 specification.  You can find out more about Swagger at [https://swagger.io](https://swagger.io). ",
@@ -38,10 +39,4 @@ app.include_router(FormatApiRouter)
 app.include_router(PartitionApiRouter)
 app.include_router(SchemaApiRouter)
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.cors_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+on_app_created(app)

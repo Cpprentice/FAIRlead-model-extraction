@@ -3,16 +3,17 @@
 {{>partial_header}}
 
 from fastapi import FastAPI
-from starlette.middleware.cors import CORSMiddleware
+try:
+    from {{packageName}}.impl.preload import on_app_created
+except ImportError:
+    def on_app_created(x): return
 
-from simpler_core.settings import Settings
 {{#apiInfo}}
 {{#apis}}
 from {{apiPackage}}.{{classFilename}} import router as {{classname}}Router
 {{/apis}}
 {{/apiInfo}}
 
-settings = Settings()
 app = FastAPI(
     title="{{appName}}",
     description="{{appDescription}}",
@@ -25,10 +26,4 @@ app.include_router({{classname}}Router)
 {{/apis}}
 {{/apiInfo}}
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.cors_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+on_app_created(app)

@@ -9,6 +9,8 @@ from simpler_core.plugin import DataSourceCursor, DataSourcePlugin, Optimization
 for module in pkgutil.iter_modules():
     if module.name.startswith('simpler_plugin_'):
         importlib.import_module(module.name)
+    if module.name.startswith('datasource_plugin_'):
+        importlib.import_module(module.name)
 
 
 # TODO remove legacy request passing to plugins -> URLs are now created only in the API code itself
