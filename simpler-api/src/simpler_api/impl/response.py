@@ -9,6 +9,8 @@ from simpler_core.rdf import build_owl
 
 
 def wrap_response_according_to_accept_header(request: Request, response: Any) -> Response:
+    if 'accept' not in request.headers:
+        return response
     requested_data_type = request.headers['accept']
     if requested_data_type == 'application/x-yaml':
         yaml_string = yaml.safe_dump(response)
@@ -21,5 +23,9 @@ def wrap_response_according_to_accept_header(request: Request, response: Any) ->
     elif requested_data_type == 'application/x.linkml+yaml':
         schema = convert_er_to_linkml(response)
         return Response(as_yaml(schema), media_type='application/x.linkml+yaml')
+    elif requested_data_type == 'application/x.oemeta+json':
+        oemeta = '...'  # TODO convert to oemeta
+        # return Response(oemeta, media_type='application/x.oemeta+json')
+        return response
     else:
         return response

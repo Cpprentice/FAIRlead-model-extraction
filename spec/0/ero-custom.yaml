@@ -97,6 +97,13 @@ slots:
     multivalued: true
     range: string
 classes:
+  EntityContainer:
+    tree_root: true
+    attributes:
+      entities:
+        multivalued: true
+        inlined_as_list: true
+        range: Entity
   Attribute:
     slots:
     - hasAttributeModifier

@@ -28,11 +28,15 @@ class TabularDataSourceType(DataSourceType):
     input_validation_statement = r'(data_header.*|data_no_header.*)'
 
 
-def extract_csv_data(directory: Path, reader_factory: Callable[[TextIO], Iterable]) -> Dict:
+def extract_csv_data(directory: Path, reader_factory: Callable[[TextIO, ...], Iterable], **kwargs) -> Dict:
     result = {}
+    encoding = None
+    if 'encoding' in kwargs:
+        encoding = kwargs['encoding']
+        del kwargs['encoding']  # TODO this breaks if we do need to call this method twice (some files with and some files without header)
     for file in directory.glob('*.csv'):
-        with open(file, 'r') as stream:
-            reader = reader_factory(stream)
+        with open(file, 'r', encoding=encoding) as stream:
+            reader = reader_factory(stream, **kwargs)
             result[file.stem] = list(reader)
     return result
 
@@ -45,6 +49,8 @@ class TabularDataSourcePlugin(DataSourcePlugin):
         pass
 
     def get_all_entities(self, name: str) -> List[Entity]:
+        csv_reader_args = self.storage.get_data_source_settings(name)['csv_reader']
+
         no_header_data = None
         with_header_data = None
         schema = None
@@ -54,11 +60,11 @@ class TabularDataSourcePlugin(DataSourcePlugin):
             if 'data_no_header' in stream_lookup:
                 with ZipFile(stream_lookup['data_no_header']) as zip_handle:
                     zip_handle.extractall(zip_no_header_directory)
-                no_header_data = extract_csv_data(Path(zip_no_header_directory), csv.reader)
+                no_header_data = extract_csv_data(Path(zip_no_header_directory), csv.reader, **csv_reader_args)
             if 'data_header' in stream_lookup:
                 with ZipFile(stream_lookup['data_header']) as zip_handle:
                     zip_handle.extractall(zip_directory)
-                with_header_data = extract_csv_data(Path(zip_directory), lambda stream: csv.DictReader(stream))
+                with_header_data = extract_csv_data(Path(zip_directory), lambda stream, **kwargs: csv.DictReader(stream, **kwargs), **csv_reader_args)
             # if 'schema' in stream_lookup:
             #     schema_data = load_external_schema_from_yaml(stream_lookup['schema'])
             #     schema = {
@@ -69,6 +75,8 @@ class TabularDataSourcePlugin(DataSourcePlugin):
 
         if with_header_data is None:
             with_header_data = {}
+        if no_header_data is None:
+            no_header_data = {}
         for key, table in no_header_data.items():
             with_header_data[key] = [
                 {

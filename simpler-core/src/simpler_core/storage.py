@@ -2,7 +2,9 @@ from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from pathlib import Path
 import shutil
-from typing import Dict, IO, List, Tuple
+from typing import Dict, IO, List, Tuple, Any
+
+import yaml
 
 
 class DataSourceStorage(ABC):
@@ -32,6 +34,10 @@ class DataSourceStorage(ABC):
 
     @abstractmethod
     def get_file_path(self, data_source_name: str, part_name: str) -> Path:
+        ...
+
+    @abstractmethod
+    def get_data_source_settings(self, data_source_name: str) -> dict[str, Any]:
         ...
 
 
@@ -66,6 +72,9 @@ class ManualFilesystemDataSourceStorage(DataSourceStorage):
     def get_file_path(self, data_source_name: str, part_name: str) -> Path:
         return self.files[data_source_name][1][part_name]
 
+    def get_data_source_settings(self, data_source_name: str) -> dict[str, Any]:
+        return {}
+
 
 class FilesystemDataSourceStorage(DataSourceStorage):
 
@@ -73,13 +82,17 @@ class FilesystemDataSourceStorage(DataSourceStorage):
         self.storage_path = Path(storage_path)
 
     def list_available_data(self) -> List[str]:
-        return [x.stem for x in self.storage_path.glob('*.plugin')]
+        return [x.parent.stem for x in self.storage_path.glob('*/plugin.yaml')]
 
     def insert_data(self, name: str, plugin_name: str, parts: Dict[str, IO]):
         new_path = self.storage_path / name
         new_path.mkdir(exist_ok=True)
-        plugin_file_path = self.storage_path / f'{name}.plugin'
-        plugin_file_path.write_text(plugin_name)
+        plugin_settings_file_path = self.storage_path / name / 'plugin.yaml'
+
+        plugin_settings_file_path.write_text(yaml.safe_dump({
+            'plugin_name': plugin_name,
+            'id_strategy': {}
+        }))
         for part_name, part_stream in parts.items():
             file_path = new_path / part_name
             with file_path.open('wb') as target_stream:
@@ -101,7 +114,8 @@ class FilesystemDataSourceStorage(DataSourceStorage):
         data = {}
         try:
             for file_path in read_directory_path.iterdir():
-                data[file_path.name] = file_path.open('rb')
+                if file_path.is_file():
+                    data[file_path.name] = file_path.open('rb')
 
             yield data
         finally:
@@ -109,8 +123,13 @@ class FilesystemDataSourceStorage(DataSourceStorage):
                 stream.close()
 
     def get_plugin_name(self, data_source_name: str) -> str:
-        plugin_file_path = self.storage_path / f'{data_source_name}.plugin'
-        return plugin_file_path.read_text()
+        plugin_data = self.get_data_source_settings(data_source_name)
+        return plugin_data['plugin_name']
 
     def get_file_path(self, data_source_name: str, part_name: str) -> Path:
         return self.storage_path / data_source_name / part_name
+
+    def get_data_source_settings(self, data_source_name: str) -> dict[str, Any]:
+        plugin_file_path = self.storage_path / data_source_name / 'plugin.yaml'
+        with open(plugin_file_path, 'r') as stream:
+            return yaml.safe_load(stream)

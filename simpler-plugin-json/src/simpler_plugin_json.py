@@ -1,8 +1,9 @@
+import collections
 import json
 import re
 import sys
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Any
 
 from datamodel_code_generator import generate, InputFileType, DataModelType, PythonVersion, load_yaml
 from datamodel_code_generator.model import get_data_model_types, DataModel
@@ -26,14 +27,17 @@ class JSONDataSourcePlugin(DataSourcePlugin):
 
     data_source_type = JSONDataSourceType()
 
-    def _generate_model_from_json_data(self, schema_name: str):
+    def _produce_json_data_obj(self, schema_name: str) -> dict|list|int|str|None:
         with self.storage.get_data(schema_name) as stream_lookup:
             data_content = stream_lookup['data'].read().decode('utf-8')
 
             obj = load_yaml(
                 data_content
             )
+        return obj
 
+    def _generate_model_from_json_data(self, schema_name: str):
+        obj = self._produce_json_data_obj(schema_name)
         return self.generate_model_from_dict(obj)
 
     @staticmethod
@@ -106,11 +110,16 @@ class JSONDataSourcePlugin(DataSourcePlugin):
         return entities
 
     @staticmethod
-    def generate_model_from_dict(obj: Dict) -> List[Entity]:
+    def _create_schema_builder_from_json_object(obj: Dict):
         from genson import SchemaBuilder
 
         builder = SchemaBuilder()
         builder.add_object(obj)
+        return builder
+
+    @staticmethod
+    def _generate_internal_data_model(obj: Dict) -> list[DataModel]:
+        builder = JSONDataSourcePlugin._create_schema_builder_from_json_object(obj)
         schema_text = json.dumps(builder.to_schema())
 
         data_model_types = get_data_model_types(DataModelType.PydanticV2BaseModel, PythonVersion.PY_312)
@@ -202,6 +211,11 @@ class JSONDataSourcePlugin(DataSourcePlugin):
 
         parser.parse_raw()
         models = parser.results
+        return models
+
+    @staticmethod
+    def generate_model_from_dict(obj: Dict) -> List[Entity]:
+        models = JSONDataSourcePlugin._generate_internal_data_model(obj)
         return JSONDataSourcePlugin.generate_model_from_parsed_schema(models)
 
     def get_strong_entities(self, name: str) -> List[Entity]:

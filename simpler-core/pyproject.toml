@@ -107,7 +107,8 @@ dependencies = [
   "pydantic-settings~=2.6.1",
   "PyYAML~=6.0.1",
   "networkx~=3.3",
-  "owlready2~=0.47"
+  "owlready2~=0.47",
+  "curies~=0.10.10"
 ]
 
 [project.optional-dependencies]
