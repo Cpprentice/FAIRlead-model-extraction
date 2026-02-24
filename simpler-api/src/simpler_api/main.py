@@ -23,7 +23,9 @@ from simpler_api.apis.correction_api import router as CorrectionApiRouter
 from simpler_api.apis.data_source_api import router as DataSourceApiRouter
 from simpler_api.apis.entity_api import router as EntityApiRouter
 from simpler_api.apis.format_api import router as FormatApiRouter
+from simpler_api.apis.identifier_api import router as IdentifierApiRouter
 from simpler_api.apis.partition_api import router as PartitionApiRouter
+from simpler_api.apis.raw_api import router as RawApiRouter
 from simpler_api.apis.schema_api import router as SchemaApiRouter
 from simpler_api.apis.semantics_api import router as SemanticsApiRouter
 
@@ -37,7 +39,9 @@ app.include_router(CorrectionApiRouter)
 app.include_router(DataSourceApiRouter)
 app.include_router(EntityApiRouter)
 app.include_router(FormatApiRouter)
+app.include_router(IdentifierApiRouter)
 app.include_router(PartitionApiRouter)
+app.include_router(RawApiRouter)
 app.include_router(SchemaApiRouter)
 app.include_router(SemanticsApiRouter)
 

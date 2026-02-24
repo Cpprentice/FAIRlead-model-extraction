@@ -124,6 +124,12 @@
            rdfs:range xsd:string .
 
 
+###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/mappingText
+:mappingText rdf:type owl:DatatypeProperty ;
+             rdfs:domain :Entity ;
+             rdfs:range xsd:string .
+
+
 ###  http://iai.kit.edu/vocabularies/entity-relationship-ontology/relationName
 :relationName rdf:type owl:DatatypeProperty ;
               rdfs:domain :Relation ;
@@ -172,6 +178,11 @@
                         ] ,
                         [ rdf:type owl:Restriction ;
                           owl:onProperty :entityUrl ;
+                          owl:maxQualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+                          owl:onDataRange xsd:string
+                        ] ,
+                        [ rdf:type owl:Restriction ;
+                          owl:onProperty :mappingText ;
                           owl:maxQualifiedCardinality "1"^^xsd:nonNegativeInteger ;
                           owl:onDataRange xsd:string
                         ] .

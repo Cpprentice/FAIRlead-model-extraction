@@ -11,8 +11,12 @@ src/simpler_api/apis/entity_api.py
 src/simpler_api/apis/entity_api_base.py
 src/simpler_api/apis/format_api.py
 src/simpler_api/apis/format_api_base.py
+src/simpler_api/apis/identifier_api.py
+src/simpler_api/apis/identifier_api_base.py
 src/simpler_api/apis/partition_api.py
 src/simpler_api/apis/partition_api_base.py
+src/simpler_api/apis/raw_api.py
+src/simpler_api/apis/raw_api_base.py
 src/simpler_api/apis/schema_api.py
 src/simpler_api/apis/schema_api_base.py
 src/simpler_api/apis/semantics_api.py

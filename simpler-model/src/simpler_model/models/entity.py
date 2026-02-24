@@ -42,7 +42,8 @@ class Entity(BaseModel):
     is_object_in_relation: Optional[List[Relation]] = Field(default=None, alias="isObjectInRelation")
     is_subject_in_relation: Optional[List[Relation]] = Field(default=None, alias="isSubjectInRelation")
     entity_url: Optional[StrictStr] = Field(default=None, alias="entityUrl")
-    __properties: ClassVar[List[str]] = ["entityName", "hasAttribute", "hasEntityModifier", "isObjectInRelation", "isSubjectInRelation", "entityUrl"]
+    mapping_text: Optional[StrictStr] = Field(default=None, alias="mappingText")
+    __properties: ClassVar[List[str]] = ["entityName", "hasAttribute", "hasEntityModifier", "isObjectInRelation", "isSubjectInRelation", "entityUrl", "mappingText"]
 
     model_config = {
         "populate_by_name": True,
@@ -107,6 +108,11 @@ class Entity(BaseModel):
         if self.entity_url is None and "entity_url" in self.model_fields_set:
             _dict['entityUrl'] = None
 
+        # set to None if mapping_text (nullable) is None
+        # and model_fields_set contains the field
+        if self.mapping_text is None and "mapping_text" in self.model_fields_set:
+            _dict['mappingText'] = None
+
         return _dict
 
     @classmethod
@@ -129,7 +135,8 @@ class Entity(BaseModel):
             "hasEntityModifier": obj.get("hasEntityModifier"),
             "isObjectInRelation": [Relation.from_dict(_item) for _item in obj.get("isObjectInRelation")] if obj.get("isObjectInRelation") is not None else None,
             "isSubjectInRelation": [Relation.from_dict(_item) for _item in obj.get("isSubjectInRelation")] if obj.get("isSubjectInRelation") is not None else None,
-            "entityUrl": obj.get("entityUrl")
+            "entityUrl": obj.get("entityUrl"),
+            "mappingText": obj.get("mappingText")
         })
         return _obj
 

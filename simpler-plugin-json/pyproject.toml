@@ -111,7 +111,8 @@ classifiers = [
 dependencies = [
   "simpler-core~=0.4.0",
 #  "genson~=1.3.0",
-  "datamodel-code-generator~=0.25.9"
+  "datamodel-code-generator~=0.25.9",
+  "jsonpath-python~=1.0.6"
 ]
 
 # List additional groups of dependencies here (e.g. development

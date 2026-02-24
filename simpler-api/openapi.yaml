@@ -706,6 +706,60 @@ paths:
       summary: Get a specific entity
       tags:
       - entity
+  /schemata/{schemaId}/entities/{entityId}/identifiers:
+    post:
+      description: desc
+      parameters:
+      - $ref: '#/components/parameters/schemaId'
+      - $ref: '#/components/parameters/entityId'
+      - $ref: '#/components/parameters/preventOptimization'
+      - $ref: '#/components/parameters/preventAutomaticOptimization'
+      - $ref: '#/components/parameters/preventUserOptimization'
+      - $ref: '#/components/parameters/generateInverseRelations'
+      requestBody:
+        content:
+          application/json:
+            schema: {}
+        description: Some local unique string (as json) that shall be used to find
+          a consistent GUID
+        required: true
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                type: string
+          description: successful operation
+      summary: Get a unique ID - it is persisted if it did not exist yet
+      tags:
+      - identifier
+  /schemata/{schemaId}/entities/{entityId}/raw:
+    get:
+      description: desc
+      operationId: getEntityRawData
+      parameters:
+      - $ref: '#/components/parameters/schemaId'
+      - $ref: '#/components/parameters/entityId'
+      - $ref: '#/components/parameters/preventOptimization'
+      - $ref: '#/components/parameters/preventAutomaticOptimization'
+      - $ref: '#/components/parameters/preventUserOptimization'
+      - $ref: '#/components/parameters/generateInverseRelations'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: string
+            text/csv:
+              schema:
+                type: string
+            text/xml:
+              schema:
+                type: string
+          description: successful operation
+      summary: Get a raw data set of that entity
+      tags:
+      - raw
   /semantics/ontology:
     get:
       description: desc
@@ -999,6 +1053,7 @@ components:
             hasRelationModifier:
             - relationModifier: relationModifier
             - relationModifier: relationModifier
+          mappingText: mappingText
           hasEntityModifier:
           - entityModifier: entityModifier
           - entityModifier: entityModifier
@@ -1125,6 +1180,7 @@ components:
             hasRelationModifier:
             - relationModifier: relationModifier
             - relationModifier: relationModifier
+          mappingText: mappingText
           hasEntityModifier:
           - entityModifier: entityModifier
           - entityModifier: entityModifier
@@ -1304,9 +1360,9 @@ components:
       title: RelationModifier
     Cardinality:
       enum:
-      - Cardinality: oneOrNone
       - Cardinality: oneOrMore
       - Cardinality: any
+      - Cardinality: oneOrNone
       - Cardinality: exactlyOne
       example:
         cardinality: cardinality
@@ -1437,6 +1493,7 @@ components:
           hasRelationModifier:
           - relationModifier: relationModifier
           - relationModifier: relationModifier
+        mappingText: mappingText
         hasEntityModifier:
         - entityModifier: entityModifier
         - entityModifier: entityModifier
@@ -1544,6 +1601,10 @@ components:
         entityUrl:
           nullable: true
           title: entityUrl
+          type: string
+        mappingText:
+          nullable: true
+          title: mappingText
           type: string
       required:
       - entityName

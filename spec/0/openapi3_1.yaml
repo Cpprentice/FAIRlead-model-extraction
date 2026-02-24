@@ -736,6 +736,67 @@ paths:
             application/x-yaml:
               schema:
                 $ref: 'json-schema/Entity.json'
+  /schemata/{schemaId}/entities/{entityId}/identifiers:
+    post:
+      tags:
+        - identifier
+      summary: Get a unique ID - it is persisted if it did not exist yet
+      description: desc
+      parameters:
+        - $ref: '#/components/parameters/schemaId'
+        - $ref: '#/components/parameters/entityId'
+        - $ref: '#/components/parameters/preventOptimization'
+        - $ref: '#/components/parameters/preventAutomaticOptimization'
+        - $ref: '#/components/parameters/preventUserOptimization'
+        - $ref: '#/components/parameters/generateInverseRelations'
+      requestBody:
+        description: Some local unique string (as json) that shall be used to find a consistent GUID
+        required: true
+        content:
+          application/json:
+            schema:
+              description: any valid json
+#              anyOf:
+#                - type: object
+#                - type: number
+#                - type: string
+#                - type: boolean
+#                - type: array
+#              $ref: '#/components/schemas/AnyValidJSON'
+      responses:
+        '200':
+          description: successful operation
+          content:
+            text/plain:
+              schema:
+                type: string
+  /schemata/{schemaId}/entities/{entityId}/raw:
+    get:
+      tags:
+        - raw
+      summary: Get a raw data set of that entity
+      description: desc
+      operationId: getEntityRawData
+      parameters:
+        - $ref: '#/components/parameters/schemaId'
+        - $ref: '#/components/parameters/entityId'
+        - $ref: '#/components/parameters/preventOptimization'
+        - $ref: '#/components/parameters/preventAutomaticOptimization'
+        - $ref: '#/components/parameters/preventUserOptimization'
+        - $ref: '#/components/parameters/generateInverseRelations'
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: string
+            text/csv:
+              schema:
+                type: string
+            text/xml:
+              schema:
+                type: string
   /semantics/ontology:
     get:
       tags:
@@ -887,6 +948,13 @@ components:
       schema:
         type: string
   schemas:
+#    AnyValidJSON:
+#      anyOf:
+#        - type: string
+#        - type: number
+#        - type: boolean
+#        - type: object
+#        - type: array
     # Attribute:
     #   $ref: 'json-schema/Attribute.json'
     #   xml:

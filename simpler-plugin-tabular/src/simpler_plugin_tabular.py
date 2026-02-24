@@ -43,6 +43,9 @@ def extract_csv_data(directory: Path, reader_factory: Callable[[TextIO, ...], It
 
 class TabularDataSourcePlugin(DataSourcePlugin):
 
+    def get_raw_data_by_entity(self, name: str, entity_id: str) -> tuple[bytes, str]:
+        return None, None
+
     data_source_type = TabularDataSourceType()
 
     def get_strong_entities(self, name: str) -> List[Entity]:

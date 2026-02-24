@@ -49,6 +49,17 @@
                 }
             ],
             "default": null
+        },
+        "mappingText": {
+            "oneOf": [
+                {
+                    "type": "string"
+                },
+                {
+                    "type": "null"
+                }
+            ],
+            "default": null
         }
     },
     "required": [

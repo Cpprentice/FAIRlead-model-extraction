@@ -2,6 +2,7 @@ import codecs
 import collections
 import functools
 import itertools
+import json
 import sys
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
@@ -9,7 +10,8 @@ from dataclasses import dataclass
 from types import SimpleNamespace
 from typing import List, Dict, Set
 
-from sqlalchemy import create_engine, Connection, text, MetaData, ForeignKey as SqlForeignKey, Column as SqlColumn
+from sqlalchemy import create_engine, Connection, text, MetaData, ForeignKey as SqlForeignKey, Column as SqlColumn, \
+    Table, select
 from sqlalchemy.orm import declarative_base
 
 from simpler_core.cardinality import create_cardinality, merge_cardinalities
@@ -418,6 +420,15 @@ class BaseSqlDataSourcePlugin(DataSourcePlugin):
             if entity.name == entity_id:
                 return entity
         raise KeyError()
+
+    def get_raw_data_by_entity(self, name: str, entity_id: str) -> tuple[bytes, str]:
+        # entity = self.get_entity_by_id(name, entity_id)  # this fails if there is no such entity
+        metadata = self.get_metadata(name)
+        with (self.get_sql_cursor(name) as cursor):
+            table: Table = metadata.tables[entity_id]
+            statement = select(table)
+            result = cursor.execute(statement)
+            return json.dumps(result).encode('utf-8'), 'application/json'
 
 
 class SqliteDataSourcePlugin(BaseSqlDataSourcePlugin):

@@ -120,6 +120,10 @@ class DataSourcePlugin(ABC, metaclass=AbstractDataSourcePluginMeta):
     def get_entity_by_id(self, name: str, entity_id: str) -> Entity:
         ...
 
+    @abstractmethod
+    def get_raw_data_by_entity(self, name: str, entity_id: str) -> tuple[bytes, str]:
+        ...
+
     @classmethod
     def get_data_source_types(cls) -> List[DataSourceType]:
         return [plugin_class.data_source_type for plugin_class in cls.subclasses.values()]
@@ -175,6 +179,9 @@ class DataSourceCursor:
 
     def get_entity_by_id(self, entity_id: str):
         return self.plugin.get_entity_by_id(self.name, entity_id)
+
+    def get_raw_data_by_entity(self, entity_id: str) -> tuple[bytes, str]:
+        return self.plugin.get_raw_data_by_entity(self.name, entity_id)
 
 
 class InputDataError(Exception):

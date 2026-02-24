@@ -991,9 +991,9 @@ components:
       title: RelationModifier
     Cardinality:
       enum:
-      - Cardinality: oneOrNone
       - Cardinality: oneOrMore
       - Cardinality: any
+      - Cardinality: oneOrNone
       - Cardinality: exactlyOne
       properties:
         cardinality:
@@ -1075,6 +1075,10 @@ components:
         entityUrl:
           nullable: true
           title: entityUrl
+          type: string
+        mappingText:
+          nullable: true
+          title: mappingText
           type: string
       required:
       - entityName
