@@ -13,9 +13,9 @@ from xmlschema.validators import (XsdComplexType, XsdUnique, XsdKey, XsdKeyref, 
                                   Xsd11Unique, Xsd11Element, XsdSimpleType, Xsd11AtomicRestriction,
                                   XsdAtomicRestriction, XsdAtomicBuiltin)
 
-from simpler_core.cardinality import create_cardinality
-from simpler_core.plugin import DataSourcePlugin, DataSourceType, InputDataError, InputFlag
-from simpler_core.schema import make_hierarchical_name, is_hierarchical_path, split_prefix_and_item_name, \
+from fairlead_core.cardinality import create_cardinality
+from fairlead_core.plugin import DataSourcePlugin, DataSourceType, InputDataError, InputFlag
+from fairlead_core.schema import make_hierarchical_name, is_hierarchical_path, split_prefix_and_item_name, \
     path_separator, convert_path_separator
 
 try:

@@ -4,7 +4,7 @@ from fastapi import Request, HTTPException
 
 from simpler_api.apis.correction_api_base import BaseCorrectionApi
 from simpler_api.impl.storage import get_storage
-from simpler_core.schema import SchemaModdingContext
+from fairlead_core.schema import SchemaModdingContext
 from simpler_model import Attribute, Entity, Relation, AttributeModifier, EntityModifier, RelationModifier
 
 

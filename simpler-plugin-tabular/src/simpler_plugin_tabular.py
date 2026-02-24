@@ -12,8 +12,8 @@ import yaml
 from openpyxl.worksheet.table import Table
 from openpyxl.worksheet.worksheet import Worksheet
 
-from simpler_core.plugin import DataSourcePlugin, DataSourceType, EntityLink, InputFlag
-from simpler_core.schema import load_external_schema_from_yaml
+from fairlead_core.plugin import DataSourcePlugin, DataSourceType, EntityLink, InputFlag
+from fairlead_core.schema import load_external_schema_from_yaml
 from simpler_model import Entity, Relation, Attribute
 from simpler_plugin_json import JSONDataSourcePlugin
 

@@ -4,7 +4,7 @@ from typing import List
 import urllib.request
 import urllib.response
 
-from simpler_core.plugin import DataSourceType, InputFlag, DataSourcePlugin, EntityLink
+from fairlead_core.plugin import DataSourceType, InputFlag, DataSourcePlugin, EntityLink
 from simpler_model import Entity, Attribute
 
 

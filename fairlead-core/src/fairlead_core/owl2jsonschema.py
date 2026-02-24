@@ -8,7 +8,7 @@ from typing import Dict, List, Tuple, Type, Set
 from owlready2 import ThingClass, ObjectPropertyClass, Restriction, EXACTLY, MIN, MAX, DataPropertyClass, Ontology, \
     World, sync_reasoner_pellet
 
-from simpler_core.rdf import make_n_triples_stream, extract_ontology_concepts, \
+from fairlead_core.rdf import make_n_triples_stream, extract_ontology_concepts, \
     get_cardinality_restrictions, build_cardinality, merge_cardinalities
 
 

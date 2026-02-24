@@ -12,10 +12,10 @@ from zipfile import ZipFile
 from owlready2 import onto_path, World, PREDEFINED_ONTOLOGIES
 from rdflib import Graph, RDF, OWL, RDFS
 
-from simpler_core.cardinality import create_cardinality
-from simpler_core.plugin import DataSourcePlugin, DataSourceType, InputFlag
-from simpler_core.rdf import (extract_ontology_concepts, make_n_triples_stream, get_cardinality_restrictions,
-                              build_cardinality, merge_cardinalities, stringify_cardinality)
+from fairlead_core.cardinality import create_cardinality
+from fairlead_core.plugin import DataSourcePlugin, DataSourceType, InputFlag
+from fairlead_core.rdf import (extract_ontology_concepts, make_n_triples_stream, get_cardinality_restrictions,
+                               build_cardinality, merge_cardinalities, stringify_cardinality)
 
 try:
     from simpler_model import Entity, Relation, Attribute, AttributeModifier, RelationModifier, EntityModifier

@@ -6,9 +6,9 @@ from typing import ClassVar, List, Tuple, Type, Dict, Callable
 
 from pydantic import BaseModel, Field
 
-from simpler_core.schema import apply_schema_correction_if_available, optimize_schema, introduce_inverse_relations, \
+from fairlead_core.schema import apply_schema_correction_if_available, optimize_schema, introduce_inverse_relations, \
     get_user_schema_correction, multi_merge
-from simpler_core.storage import DataSourceStorage
+from fairlead_core.storage import DataSourceStorage
 try:
     from simpler_model import Entity, Relation
     EntityLink = Relation

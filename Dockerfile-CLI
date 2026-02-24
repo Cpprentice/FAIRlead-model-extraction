@@ -2,13 +2,13 @@ FROM python:3.12 as dev
 
 WORKDIR /app
 
-COPY simpler-core/ /app/simpler_core
+COPY fairlead-core/ /app/fairlead_core
 COPY simpler-cli /app/simpler_cli
 COPY simpler-model-3_1 /app/simpler_model
 COPY simpler-plugin-tabular /app/simpler_plugin_tabular
 
 RUN pip wheel --no-deps -w /app/wheels /app/simpler_model
-RUN pip wheel --no-deps -w /app/wheels /app/simpler_core
+RUN pip wheel --no-deps -w /app/wheels /app/fairlead_core
 RUN pip wheel --no-deps -w /app/wheels /app/simpler_cli
 
 RUN pip wheel --no-deps -w /app/wheels /app/simpler_plugin_tabular

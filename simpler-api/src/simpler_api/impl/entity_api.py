@@ -12,9 +12,9 @@ from simpler_api.impl.schema_urls import introduce_api_urls_to_entity_list, intr
 from simpler_api.impl.storage import get_storage
 from simpler_api.models.entity import Entity
 from simpler_api.models.model_schema import ModelSchema
-from simpler_core.partitioning import create_nx_graph_from_entity_list, create_filtered_entity_list
-from simpler_core.plugin import InputDataError
-from simpler_core.schema import apply_schema_correction_if_available, introduce_inverse_relations, optimize_schema
+from fairlead_core.partitioning import create_nx_graph_from_entity_list, create_filtered_entity_list
+from fairlead_core.plugin import InputDataError
+from fairlead_core.schema import apply_schema_correction_if_available, introduce_inverse_relations, optimize_schema
 
 
 class EntityApi(BaseEntityApi):

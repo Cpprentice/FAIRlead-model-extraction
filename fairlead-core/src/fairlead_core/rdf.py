@@ -13,7 +13,7 @@ from owlready2 import World, Ontology, sync_reasoner_pellet, DataPropertyClass, 
 from pydantic import BaseModel
 from rdflib import Graph, Namespace, Literal, RDF, OWL, URIRef, RDFS, BNode
 
-from simpler_core.cardinality import merge_cardinalities
+from fairlead_core.cardinality import merge_cardinalities
 from simpler_model import Entity, Cardinality, RelationModifier, EntityModifier, AttributeModifier
 
 relevant_restrictions = {

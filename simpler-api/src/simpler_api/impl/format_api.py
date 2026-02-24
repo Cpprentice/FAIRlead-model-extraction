@@ -5,7 +5,7 @@ from fastapi import HTTPException, Request, Response
 from simpler_api.impl.plugins import get_cursor
 from simpler_api.apis.format_api_base import BaseFormatApi
 from simpler_api.models.format import Format
-from simpler_core.plugin import DataSourceCursor, DataSourcePlugin
+from fairlead_core.plugin import DataSourceCursor, DataSourcePlugin
 
 
 class FormatApi(BaseFormatApi):

@@ -6,8 +6,8 @@ from simpler_api.apis.partition_api_base import BasePartitionApi
 from simpler_api.impl.plugins import get_cursor
 from simpler_api.impl.response import wrap_response_according_to_accept_header
 from simpler_api.impl.schema_urls import introduce_api_urls_to_entity_list
-from simpler_core.partitioning import create_partitioned_entity_list
-from simpler_core.plugin import InputDataError
+from fairlead_core.partitioning import create_partitioned_entity_list
+from fairlead_core.plugin import InputDataError
 from simpler_model import Partition
 
 

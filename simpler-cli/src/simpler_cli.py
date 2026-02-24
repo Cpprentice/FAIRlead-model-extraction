@@ -6,11 +6,11 @@ from argparse import ArgumentParser, ArgumentError, Namespace
 from pathlib import Path
 from typing import List, Callable
 
-from simpler_core.dot import create_graph, filter_graph
-from simpler_core.plugin import DataSourcePlugin, DataSourceCursor, DataSourceType, OptimizationSettings
-from simpler_core.schema import serialize_entity_list_to_yaml, load_external_schema_from_yaml, extend_schema_from_yaml, \
+from fairlead_core.dot import create_graph, filter_graph
+from fairlead_core.plugin import DataSourcePlugin, DataSourceCursor, DataSourceType, OptimizationSettings
+from fairlead_core.schema import serialize_entity_list_to_yaml, load_external_schema_from_yaml, extend_schema_from_yaml, \
     apply_schema_correction_if_available, introduce_inverse_relations
-from simpler_core.storage import ManualFilesystemDataSourceStorage
+from fairlead_core.storage import ManualFilesystemDataSourceStorage
 
 
 def get_arg_parser(plugins: List[DataSourceType]) -> ArgumentParser:

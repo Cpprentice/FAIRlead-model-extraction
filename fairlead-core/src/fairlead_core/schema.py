@@ -15,9 +15,9 @@ from pydantic_partial import create_partial_model
 from pydantic_partial._compat import PydanticCompat
 from rdflib import Namespace
 
-from simpler_core.cardinality import create_cardinality
-from simpler_core.rdf import build_graph
-from simpler_core.storage import DataSourceStorage
+from fairlead_core.cardinality import create_cardinality
+from fairlead_core.rdf import build_graph
+from fairlead_core.storage import DataSourceStorage
 from simpler_model import Entity, Attribute
 
 try:

@@ -14,8 +14,8 @@ from sqlalchemy import create_engine, Connection, text, MetaData, ForeignKey as 
     Table, select
 from sqlalchemy.orm import declarative_base
 
-from simpler_core.cardinality import create_cardinality, merge_cardinalities
-from simpler_core.plugin import DataSourcePlugin, DataSourceType, InputFlag
+from fairlead_core.cardinality import create_cardinality, merge_cardinalities
+from fairlead_core.plugin import DataSourcePlugin, DataSourceType, InputFlag
 
 try:
     from simpler_model import Attribute, Relation, Entity, EntityModifier, RelationModifier, AttributeModifier

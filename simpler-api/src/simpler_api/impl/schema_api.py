@@ -9,8 +9,8 @@ from simpler_api.apis.schema_api_base import BaseSchemaApi
 from simpler_api.impl.response import wrap_response_according_to_accept_header
 from simpler_api.impl.storage import get_storage
 from simpler_api.models.model_schema import ModelSchema
-from simpler_core.dot import create_graph, filter_graph
-from simpler_core.schema import apply_schema_correction_if_available, introduce_inverse_relations
+from fairlead_core.dot import create_graph, filter_graph
+from fairlead_core.schema import apply_schema_correction_if_available, introduce_inverse_relations
 
 
 class SchemaApi(BaseSchemaApi):

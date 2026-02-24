@@ -1,4 +1,4 @@
-# Simpler Core
+# FAIRlead Core
 This package contains some core functionalities used within the simple ER schema extraction [project](https://github.com/Cpprentice/FAIRlead-model-extraction).
 
 ## Plugin system

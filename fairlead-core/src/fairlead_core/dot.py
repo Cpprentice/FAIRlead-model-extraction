@@ -4,7 +4,7 @@ import urllib.parse
 import networkx as nx
 from pydot import Dot, Node, Edge
 
-from simpler_core.partitioning import filter_nx_graph
+from fairlead_core.partitioning import filter_nx_graph
 from simpler_model import Entity, EntityModifier, RelationModifier, Cardinality, Attribute
 
 cardinality_translation = {

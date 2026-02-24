@@ -9,8 +9,8 @@ from jsonpath import JSONPath
 from linkml_runtime.linkml_model import SchemaDefinition
 from linkml_runtime.utils.schemaview import SchemaView
 
-from simpler_core.cardinality import create_cardinality
-from simpler_core.plugin import DataSourceType, InputFlag, DataSourcePlugin, EntityLink
+from fairlead_core.cardinality import create_cardinality
+from fairlead_core.plugin import DataSourceType, InputFlag, DataSourcePlugin, EntityLink
 from simpler_model import Entity, Attribute, AttributeModifier, Relation
 
 

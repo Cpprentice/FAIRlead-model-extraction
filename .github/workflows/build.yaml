@@ -62,7 +62,7 @@ jobs:
     - name: Build core package
       if: contains(env.TAGS, 'core-*')
       # if: startsWith(github.ref, 'refs/tags/core-')
-      run: python -m build simpler-core/.
+      run: python -m build fairlead-core/.
 
     - name: Build cli package
       if: contains(env.TAGS, 'cli-*')

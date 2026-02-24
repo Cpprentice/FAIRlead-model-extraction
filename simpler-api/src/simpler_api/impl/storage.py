@@ -2,8 +2,8 @@ import io
 from functools import cache
 from pathlib import Path
 
-from simpler_core.identifiers import YamlFileIdentifierStorage, IdentifierStorageService
-from simpler_core.storage import FilesystemDataSourceStorage
+from fairlead_core.identifiers import YamlFileIdentifierStorage, IdentifierStorageService
+from fairlead_core.storage import FilesystemDataSourceStorage
 
 
 def get_storage():

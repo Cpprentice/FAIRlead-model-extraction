@@ -10,8 +10,8 @@ from datamodel_code_generator.model import get_data_model_types, DataModel
 from datamodel_code_generator.model.pydantic_v2 import RootModel
 from jsonpath import JSONPath
 
-from simpler_core.cardinality import create_cardinality
-from simpler_core.plugin import DataSourceType, DataSourcePlugin, EntityLink, InputFlag
+from fairlead_core.cardinality import create_cardinality
+from fairlead_core.plugin import DataSourceType, DataSourcePlugin, EntityLink, InputFlag
 from simpler_model import Entity, Attribute, Relation, EntityModifier
 
 

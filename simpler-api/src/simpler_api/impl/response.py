@@ -4,8 +4,8 @@ import yaml
 from fastapi import Request, Response
 from linkml_runtime.utils.yamlutils import as_yaml
 
-from simpler_core.linkml_schema import convert_er_to_linkml
-from simpler_core.rdf import build_owl
+from fairlead_core.linkml_schema import convert_er_to_linkml
+from fairlead_core.rdf import build_owl
 
 
 def wrap_response_according_to_accept_header(request: Request, response: Any) -> Response:

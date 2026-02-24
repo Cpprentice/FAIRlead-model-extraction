@@ -4,8 +4,8 @@ from typing import List
 from datamodel_code_generator import DataModelType, PythonVersion
 from datamodel_code_generator.model import get_data_model_types
 
-from simpler_core.cardinality import create_cardinality
-from simpler_core.plugin import DataSourceType, DataSourcePlugin, EntityLink, InputFlag
+from fairlead_core.cardinality import create_cardinality
+from fairlead_core.plugin import DataSourceType, DataSourcePlugin, EntityLink, InputFlag
 from simpler_model import Entity, Attribute, Relation, EntityModifier
 from simpler_plugin_json import JSONDataSourcePlugin
 

@@ -9,7 +9,7 @@ from simpler_api.apis.data_source_api_base import BaseDataSourceApi
 from simpler_api.impl.plugins import get_cursor
 from simpler_api.impl.response import wrap_response_according_to_accept_header
 from simpler_api.impl.storage import get_storage
-from simpler_core.plugin import DataSourcePlugin, InputFlag
+from fairlead_core.plugin import DataSourcePlugin, InputFlag
 from simpler_model import DataSource, DataSourceTextDataInner
 
 
