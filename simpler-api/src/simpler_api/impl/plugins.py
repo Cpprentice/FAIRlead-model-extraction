@@ -4,7 +4,8 @@ import pkgutil
 from fastapi import Request
 
 from simpler_api.impl.storage import get_storage
-from fairlead_core.plugin import DataSourceCursor, DataSourcePlugin, OptimizationSettings
+from fairlead_core.plugin import DataSourceCursor, DataSourcePlugin
+from fairlead_core.settings import OptimizationSettings
 
 for module in pkgutil.iter_modules():
     if module.name.startswith('simpler_plugin_'):

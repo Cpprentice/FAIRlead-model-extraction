@@ -23,6 +23,7 @@ from fastapi import (  # noqa: F401
 )
 
 from simpler_api.models.extra_models import TokenModel  # noqa: F401
+from simpler_api.models.class_definition_view import ClassDefinitionView
 from simpler_api.models.model_schema import ModelSchema
 
 
@@ -53,6 +54,25 @@ async def get_all_schemas(
 ) -> List[ModelSchema]:
     """desc"""
     return BaseSchemaApi.subclasses[0]().get_all_schemas(request, prevent_optimization, prevent_automatic_optimization, prevent_user_optimization, generate_inverse_relations)
+
+
+@router.get(
+    "/schemata/{schemaId}/classes",
+    responses={
+        200: {"model": List[ClassDefinitionView], "description": "successful operation"},
+    },
+    tags=["schema"],
+    summary="get all classes of a schema",
+    response_model_by_alias=True,
+)
+async def get_classes_by_schema(
+    request: Request,
+    schemaId: str = Path(..., description="ID of schema to access"),
+    prevent_structural_enhancement: bool = Query(False, description="", alias="preventStructuralEnhancement"),
+    prevent_enhancement: bool = Query(False, description="", alias="preventEnhancement"),
+) -> List[ClassDefinitionView]:
+    """desc"""
+    return BaseSchemaApi.subclasses[0]().get_classes_by_schema(request, schemaId, prevent_structural_enhancement, prevent_enhancement)
 
 
 @router.get(

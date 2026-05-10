@@ -3,6 +3,7 @@
 from typing import ClassVar, Dict, List, Tuple  # noqa: F401
 from fastapi import Request
 
+from simpler_api.models.class_definition_view import ClassDefinitionView
 from simpler_api.models.model_schema import ModelSchema
 
 
@@ -23,6 +24,17 @@ class BaseSchemaApi:
         prevent_user_optimization: bool,
         generate_inverse_relations: bool,
     ) -> List[ModelSchema]:
+        """desc"""
+        ...
+
+
+    def get_classes_by_schema(
+        self,
+        request: Request,
+        schemaId: str,
+        prevent_structural_enhancement: bool,
+        prevent_enhancement: bool,
+    ) -> List[ClassDefinitionView]:
         """desc"""
         ...
 

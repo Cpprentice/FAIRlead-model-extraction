@@ -1,3 +1,4 @@
+import json
 from typing import Any
 
 import yaml
@@ -5,6 +6,7 @@ from fastapi import Request, Response
 from linkml_runtime.utils.yamlutils import as_yaml
 
 from fairlead_core.linkml_schema import convert_er_to_linkml
+from fairlead_core.metadata import convert_schema_to_oemetadata
 from fairlead_core.rdf import build_owl
 
 
@@ -24,8 +26,8 @@ def wrap_response_according_to_accept_header(request: Request, response: Any) ->
         schema = convert_er_to_linkml(response)
         return Response(as_yaml(schema), media_type='application/x.linkml+yaml')
     elif requested_data_type == 'application/x.oemeta+json':
-        oemeta = '...'  # TODO convert to oemeta
-        # return Response(oemeta, media_type='application/x.oemeta+json')
-        return response
+        oemeta_dict = convert_schema_to_oemetadata(response)
+        oemeta = json.dumps(oemeta_dict)
+        return Response(oemeta, media_type='application/x.oemeta+json')
     else:
         return response

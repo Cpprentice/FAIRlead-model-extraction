@@ -670,6 +670,45 @@ paths:
                   $ref: '#/components/schemas/Partition'
                 xml:
                   name: Partitions
+  /schemata/{schemaId}/classes:
+    get:
+      tags:
+        - schema
+      summary: get all classes of a schema
+      description: desc
+      operationId: getClassesBySchema
+      parameters:
+        - $ref: '#/components/parameters/schemaId'
+        - $ref: '#/components/parameters/preventStructuralEnhancement'
+        - $ref: '#/components/parameters/preventEnhancement'
+        # - $ref: '#/components/parameters/EntityPrefix'
+        # - $ref: '#/components/parameters/preventOptimization'
+        # - $ref: '#/components/parameters/preventAutomaticOptimization'
+        # - $ref: '#/components/parameters/preventUserOptimization'
+        # - $ref: '#/components/parameters/generateInverseRelations'
+        # - $ref: '#/components/parameters/entityFilter'
+        # - $ref: '#/components/parameters/entityFilterDistance'
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClassDefinitionView'
+            application/xml:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClassDefinitionView'
+                xml:
+                  name: entities
+            application/x-yaml:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClassDefinitionView'
   /schemata/{schemaId}/entities:
     get:
       tags:
@@ -987,6 +1026,20 @@ components:
         type: string
         default: ''
       required: false
+    preventStructuralEnhancement:
+      name: preventStructuralEnhancement
+      in: query
+      schema:
+        type: boolean
+        default: false
+      required: false
+    preventEnhancement:
+      name: preventEnhancement
+      in: query
+      schema:
+        type: boolean
+        default: false
+      required: false
     preventOptimization:
       name: preventOptimization
       in: query
@@ -1103,6 +1156,65 @@ components:
     #   xml:
     #     name: relation-modifier
 
+    Annotatable:
+      type: object
+      properties:
+        annotations:
+          type: array
+          items:
+            $ref: '#/components/schemas/OntologicalAnnotation'
+
+    ClassDefinitionView:
+      type: object
+      required:
+        - name
+        - attributes
+        - relations
+      properties:
+        name:
+          type: string
+        attributes:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/SlotDefinitionView'
+          propertyNames:
+            type: string
+
+        relations:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/SlotDefinitionView'
+          propertyNames:
+            type: string
+
+        annotations:
+          type: array
+          items:
+            $ref: '#/components/schemas/OntologicalAnnotation'
+
+    SlotDefinitionView:
+      allOf:
+        - $ref: '#/components/schemas/Annotatable'
+        - type: object
+          required:
+            - name
+            - range
+            - key
+          properties:
+            name:
+              type: string
+            range:
+              # Technically nullable: true is the official openapi way as type is only a single value officially
+              #  however, using string and null as a list works for both the typescript and python code generator
+              type:
+                - string
+                - null
+              # type: string
+              nullable: true
+            key:
+              type: boolean
+            unit:
+              $ref: '#/components/schemas/Unit'
     Unit:
       type: object
       required:
@@ -1127,6 +1239,26 @@ components:
         description:
           type: string
 
+    OntologicalAnnotation:
+      type: object
+      properties:
+        operator:
+          type: string
+          enum:
+            - exact_mapping
+            - close_mapping
+            - narrow_mapping
+            - broad_mapping
+            - related_mapping
+        iri:
+          type: string
+          format: url
+        label:
+          type: string
+          default: ''
+      required:
+        - operator
+        - iri
 
     DataSource:
       type: object
@@ -1209,5 +1341,122 @@ components:
             $ref: '#/components/schemas/EntityLink'
       xml:
         name: schema
-    
+
+    GenericEnhancementOperation:
+      type: object
+      properties:
+        operation_type:
+          type: string
+        attributes:
+          type: object
+          # if nested objects and arrays are to be allowed use
+          additionalProperties: true
+#          additionalProperties:
+#            oneOf:
+#              - type: string
+#              - type: number
+#              - type: boolean
+
+    GenericEnhancementHandler:
+      type: object
+      properties:
+        producer_type:
+          type: string
+        triggers:
+          type: array
+          items:
+            type: string
+        attributes:
+          type: object
+          additionalProperties: true
+#          additionalProperties:
+#            oneOf:
+#              - type: string
+#              - type: number
+#              - type: boolean
+
+    RenameAttributeOperation:
+      type: object
+      properties:
+        class_name:
+          type: string
+        old_name:
+          type: string
+        new_name:
+          type: string
+      required:
+        - class_name
+        - old_name
+        - new_name
+
+    ConvertAttributeToRelationOperation:
+      type: object
+      properties:
+        class_name:
+          type: string
+        attribute_name:
+          type: string
+        new_range:
+          type: string
+      required:
+        - class_name
+        - attribute_name
+        - new_range
+
+    AssignOntologyTermOperation:
+      type: object
+      properties:
+        item_type:
+          type: string  # TODO use an enum instead
+        item_id:
+          type: string
+        ontology_term:
+          type: string
+          format: uri
+      required:
+        - item_type
+        - item_id
+        - ontology_term
+    EnhancementOperation:
+      oneOf:
+        - $ref: '#/components/schemas/RenameAttributeOperation'
+        - $ref: '#/components/schemas/ConvertAttributeToRelationOperation'
+        - $ref: '#/components/schemas/AssignOntologyTermOperation'
+
+
+    SchemaEnhancement:
+      type: object
+      properties:
+        operations:
+          type: array
+          items:
+            $ref: '#/components/schemas/GenericEnhancementOperation'
+        producers:
+          type: array
+          items:
+            $ref: '#/components/schemas/GenericEnhancementHandler'
+      required:
+        - operations
+        - producers
+
+    PatternBasedAttributeConverter:
+      type: object
+      properties:
+        regular_expression:
+          type: string
+        group_index:
+          type: integer
+          default: 0
+        triggers:
+          type: array
+          items:
+            type: string
+      required:
+        - regular_expression
+        - triggers
+
+    EnhancementHandler:
+      oneOf:
+        - $ref: '#/components/schemas/PatternBasedAttributeConverter'
+
 

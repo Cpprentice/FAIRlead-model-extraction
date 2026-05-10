@@ -8,7 +8,7 @@ info:
     name: MIT
   termsOfService: http://swagger.io/terms/
   title: Schema API - OpenAPI 3.1
-  version: 0.7.0
+  version: 0.8.0
 externalDocs:
   description: Find out more about Swagger
   url: http://swagger.io
@@ -241,6 +241,93 @@ paths:
       summary: Get schema by ID
       tags:
       - schema
+  /schemata/{schemaId}/enhancement:
+    get:
+      description: Fetch all the enhancements of the specified schema
+      operationId: getSchemaEnhancement
+      parameters:
+      - $ref: '#/components/parameters/schemaId'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaEnhancement'
+          description: Operation successful
+        "404":
+          description: Schema not found
+      summary: Get the current schema enhancement
+      tags:
+      - enhancement
+    put:
+      description: Overwrite the patches for the schema entirely
+      operationId: setSchemaEnhancement
+      parameters:
+      - $ref: '#/components/parameters/schemaId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SchemaEnhancement'
+          application/x-yaml:
+            schema:
+              $ref: '#/components/schemas/SchemaEnhancement'
+        description: The entire state of configured schema enhancements
+        required: true
+      responses:
+        "200":
+          description: Operation successful
+        "400":
+          description: Invalid data format
+        "404":
+          description: Schema not found
+      summary: Save the entire operations stack for this schema
+      tags:
+      - enhancement
+  /schemata/{schemaId}/enhancement/operations:
+    post:
+      description: Append a new enhancement operation
+      operationId: insertEnhancementOperation
+      parameters:
+      - $ref: '#/components/parameters/schemaId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericEnhancementOperation'
+        description: The new operation
+      responses:
+        "200":
+          description: operation successful
+        "400":
+          description: bad request body
+        "404":
+          description: schema not found
+      summary: Insert a new enhancement operation
+      tags:
+      - enhancement
+  /schemata/{schemaId}/enhancements/handlers:
+    post:
+      description: Append a new enhancement handler
+      operationId: insertEnhancementHandler
+      parameters:
+      - $ref: '#/components/parameters/schemaId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericEnhancementHandler'
+        description: The new handler
+      responses:
+        "200":
+          description: operation successful
+        "400":
+          description: bad request body
+        "404":
+          description: schema not found
+      summary: Insert a new enhancement handler
+      tags:
+      - enhancement
   /schemata/{schemaId}/corrections/entities:
     post:
       description: Add an entirely new entity
@@ -267,6 +354,7 @@ paths:
           content:
             text/plain:
               schema:
+                title: id
                 type: string
           description: bad request
         "404":
@@ -285,6 +373,7 @@ paths:
         content:
           text/plain:
             schema:
+              title: id
               type: string
         description: new name as plain string
         required: true
@@ -579,6 +668,7 @@ paths:
         schema:
           default: []
           items:
+            title: id
             type: string
           type: array
         style: form
@@ -600,9 +690,11 @@ paths:
           content:
             image/svg+xml:
               schema:
+                title: id
                 type: string
             text/plain:
               schema:
+                title: id
                 type: string
           description: successful operation
         "404":
@@ -643,6 +735,37 @@ paths:
           description: successful operation
       tags:
       - partition
+  /schemata/{schemaId}/classes:
+    get:
+      description: desc
+      operationId: getClassesBySchema
+      parameters:
+      - $ref: '#/components/parameters/schemaId'
+      - $ref: '#/components/parameters/preventStructuralEnhancement'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/ClassDefinitionView'
+                type: array
+            application/xml:
+              schema:
+                items:
+                  $ref: '#/components/schemas/ClassDefinitionView'
+                type: array
+                xml:
+                  name: entities
+            application/x-yaml:
+              schema:
+                items:
+                  $ref: '#/components/schemas/ClassDefinitionView'
+                type: array
+          description: successful operation
+      summary: get all classes of a schema
+      tags:
+      - schema
   /schemata/{schemaId}/entities:
     get:
       description: desc
@@ -706,6 +829,64 @@ paths:
       summary: Get a specific entity
       tags:
       - entity
+  /schemata/{schemaId}/entities/{entityId}/identifiers:
+    post:
+      description: desc
+      parameters:
+      - $ref: '#/components/parameters/schemaId'
+      - $ref: '#/components/parameters/entityId'
+      - $ref: '#/components/parameters/preventOptimization'
+      - $ref: '#/components/parameters/preventAutomaticOptimization'
+      - $ref: '#/components/parameters/preventUserOptimization'
+      - $ref: '#/components/parameters/generateInverseRelations'
+      requestBody:
+        content:
+          application/json:
+            schema: {}
+        description: Some local unique string (as json) that shall be used to find
+          a consistent GUID
+        required: true
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                title: id
+                type: string
+          description: successful operation
+      summary: Get a unique ID - it is persisted if it did not exist yet
+      tags:
+      - identifier
+  /schemata/{schemaId}/entities/{entityId}/raw:
+    get:
+      description: desc
+      operationId: getEntityRawData
+      parameters:
+      - $ref: '#/components/parameters/schemaId'
+      - $ref: '#/components/parameters/entityId'
+      - $ref: '#/components/parameters/preventOptimization'
+      - $ref: '#/components/parameters/preventAutomaticOptimization'
+      - $ref: '#/components/parameters/preventUserOptimization'
+      - $ref: '#/components/parameters/generateInverseRelations'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                title: id
+                type: string
+            text/csv:
+              schema:
+                title: id
+                type: string
+            text/xml:
+              schema:
+                title: id
+                type: string
+          description: successful operation
+      summary: Get a raw data set of that entity
+      tags:
+      - raw
   /semantics/ontology:
     get:
       description: desc
@@ -715,9 +896,11 @@ paths:
           content:
             text/html:
               schema:
+                title: id
                 type: string
             text/turtle:
               schema:
+                title: id
                 type: string
           description: successful operation
       summary: Get the ERO ontology
@@ -733,6 +916,7 @@ paths:
         name: concept
         required: true
         schema:
+          title: id
           type: string
         style: simple
       responses:
@@ -740,9 +924,11 @@ paths:
           content:
             text/html:
               schema:
+                title: id
                 type: string
             text/turtle:
               schema:
+                title: id
                 type: string
           description: successful operation
       summary: Get the ontology or the concept docs
@@ -757,11 +943,75 @@ paths:
           content:
             application/json:
               schema:
+                title: id
                 type: string
           description: successful operation
       summary: Get the ERO ontology jsonld context
       tags:
       - semantics
+  /semantics/units/search:
+    get:
+      description: Fetch units based on a query string
+      operationId: searchUnits
+      parameters:
+      - explode: true
+        in: query
+        name: searchString
+        required: true
+        schema:
+          items:
+            type: string
+          type: array
+        style: form
+      - explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          default: 10
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Unit'
+                type: array
+          description: Top matches for search string
+      summary: Search for QUDT units that match a query
+      tags:
+      - units
+  /semantics/quantities/search:
+    get:
+      parameters:
+      - explode: true
+        in: query
+        name: searchString
+        required: true
+        schema:
+          items:
+            type: string
+          type: array
+        style: form
+      - explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          default: 10
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Quantity'
+                type: array
+          description: Top matches for search string
 components:
   parameters:
     dataSourceId:
@@ -787,6 +1037,15 @@ components:
       required: false
       schema:
         default: ""
+      style: form
+    preventStructuralEnhancement:
+      explode: true
+      in: query
+      name: preventStructuralEnhancement
+      required: false
+      schema:
+        default: false
+        type: boolean
       style: form
     preventOptimization:
       explode: true
@@ -886,6 +1145,102 @@ components:
         type: string
       style: simple
   schemas:
+    Annotatable:
+      properties:
+        annotations:
+          items:
+            $ref: '#/components/schemas/OntologicalAnnotation'
+          title: annotations
+          type: array
+      title: Annotatable
+    ClassDefinitionView:
+      properties:
+        name:
+          type: string
+        attributes:
+          additionalProperties:
+            $ref: '#/components/schemas/SlotDefinitionView'
+        relations:
+          additionalProperties:
+            $ref: '#/components/schemas/SlotDefinitionView'
+        annotations:
+          items:
+            $ref: '#/components/schemas/OntologicalAnnotation'
+          type: array
+      required:
+      - attributes
+      - name
+      - relations
+    SlotDefinitionView:
+      allOf:
+      - $ref: '#/components/schemas/Annotatable'
+      - properties:
+          name:
+            type: string
+          range:
+            nullable: true
+            type: string
+            nullable: true
+          key:
+            type: boolean
+          unit:
+            $ref: '#/components/schemas/Unit'
+        required:
+        - key
+        - name
+        - range
+      title: SlotDefinitionView
+    Unit:
+      properties:
+        id:
+          title: id
+          type: string
+        symbol:
+          title: id
+          type: string
+        description:
+          title: id
+          type: string
+      required:
+      - id
+      title: Unit
+    Quantity:
+      properties:
+        id:
+          title: id
+          type: string
+        symbol:
+          title: id
+          type: string
+        description:
+          title: id
+          type: string
+      required:
+      - id
+      title: Unit
+    OntologicalAnnotation:
+      properties:
+        operator:
+          enum:
+          - exact_mapping
+          - close_mapping
+          - narrow_mapping
+          - broad_mapping
+          - related_mapping
+          title: operator
+          type: string
+        iri:
+          format: url
+          title: iri
+          type: string
+        label:
+          default: ""
+          title: label
+          type: string
+      required:
+      - iri
+      - operator
+      title: OntologicalAnnotation
     DataSource:
       properties:
         id:
@@ -945,6 +1300,119 @@ components:
             name: entities
       xml:
         name: schema
+    GenericEnhancementOperation:
+      properties:
+        operation_type:
+          title: id
+          type: string
+        attributes:
+          additionalProperties: true
+          title: attributes
+          type: object
+      title: GenericEnhancementOperation
+    GenericEnhancementHandler:
+      properties:
+        producer_type:
+          title: producer_type
+          type: string
+        triggers:
+          items:
+            type: string
+          title: triggers
+          type: array
+        attributes:
+          additionalProperties: true
+          title: attributes
+          type: object
+      title: GenericEnhancementHandler
+    RenameAttributeOperation:
+      properties:
+        class_name:
+          title: id
+          type: string
+        old_name:
+          title: id
+          type: string
+        new_name:
+          title: id
+          type: string
+      required:
+      - class_name
+      - new_name
+      - old_name
+      title: RenameAttributeOperation
+    ConvertAttributeToRelationOperation:
+      properties:
+        class_name:
+          title: id
+          type: string
+        attribute_name:
+          title: id
+          type: string
+        new_range:
+          title: id
+          type: string
+      required:
+      - attribute_name
+      - class_name
+      - new_range
+      title: ConvertAttributeToRelationOperation
+    AssignOntologyTermOperation:
+      properties:
+        item_type:
+          title: id
+          type: string
+        item_id:
+          title: id
+          type: string
+        ontology_term:
+          format: uri
+          title: ontology_term
+          type: string
+      required:
+      - item_id
+      - item_type
+      - ontology_term
+      title: AssignOntologyTermOperation
+    EnhancementOperation:
+      oneOf:
+      - $ref: '#/components/schemas/RenameAttributeOperation'
+      - $ref: '#/components/schemas/ConvertAttributeToRelationOperation'
+      - $ref: '#/components/schemas/AssignOntologyTermOperation'
+    SchemaEnhancement:
+      properties:
+        operations:
+          items:
+            $ref: '#/components/schemas/GenericEnhancementOperation'
+          type: array
+        producers:
+          items:
+            $ref: '#/components/schemas/GenericEnhancementHandler'
+          type: array
+      required:
+      - operations
+      - producers
+    PatternBasedAttributeConverter:
+      properties:
+        regular_expression:
+          title: id
+          type: string
+        group_index:
+          default: 0
+          title: group_index
+          type: integer
+        triggers:
+          items:
+            type: string
+          title: triggers
+          type: array
+      required:
+      - regular_expression
+      - triggers
+      title: PatternBasedAttributeConverter
+    EnhancementHandler:
+      oneOf:
+      - $ref: '#/components/schemas/PatternBasedAttributeConverter'
     AttributeModifier:
       enum:
       - AttributeModifier: key
@@ -991,9 +1459,9 @@ components:
       title: RelationModifier
     Cardinality:
       enum:
+      - Cardinality: oneOrNone
       - Cardinality: oneOrMore
       - Cardinality: any
-      - Cardinality: oneOrNone
       - Cardinality: exactlyOne
       properties:
         cardinality:
