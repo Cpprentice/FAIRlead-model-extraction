@@ -10,7 +10,7 @@ info:
   license:
     name: MIT
     identifier: MIT
-  version: 0.7.0
+  version: 0.8.0
 externalDocs:
   description: Find out more about Swagger
   url: http://swagger.io
@@ -851,6 +851,121 @@ paths:
             application/json:
               schema:
                 type: string
+  /semantics/units:
+    get:
+      tags:
+        - semantics
+      summary: Get all QUDT SI Units
+      description: Fetch all SI units
+      operationId: getUnits
+      responses:
+        '200':
+          description: Unit list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Unit'
+  /semantics/units/search:
+    get:
+      tags:
+        - semantics
+      summary: Search for QUDT units that match a query
+      description: Fetch units based on a query string
+      operationId: searchUnits
+      parameters:
+        - name: searchString
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          required: true
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+          required: false
+      responses:
+        '200':
+          description: Top matches for search string
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Unit'
+  /semantics/units/match:
+    get:
+      tags:
+        - semantics
+      summary: Match a list of units against a list of texts
+      description: Find the best unit of a given set to a set of texts
+      operationId: matchUnits
+      parameters:
+        - name: unitIris
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          required: true
+        - name: unitTexts
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          required: true
+      responses:
+        '200':
+          description: Match lookup
+          content:
+            application/json:
+              schema:
+                # sadly a dict to units does not work correctly but strings work as well
+                type: object
+                additionalProperties:
+                  type: string
+#                type: object
+#                additionalProperties:
+#                  type:
+#                    - object
+#                    - 'null'
+#                  $ref: '#/components/schemas/Unit'
+  /semantics/quantities/search:
+    get:
+      tags:
+        - semantics
+      summary: Search for QUDT quantity kinds that match a query
+      description: Fetch quantity kinds based on a query string
+      operationId: searchQuantityKinds
+      parameters:
+        - name: searchString
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          required: true
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+          required: false
+      responses:
+        '200':
+          description: Top matches for search string
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Quantity'
+
 components:
   parameters:
     dataSourceId:
@@ -987,7 +1102,31 @@ components:
     #   $ref: 'json-schema/RelationModifier.json'
     #   xml:
     #     name: relation-modifier
-    
+
+    Unit:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+        symbol:
+          type: string
+        description:
+          type: string
+
+    Quantity:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+        symbol:
+          type: string
+        description:
+          type: string
+
 
     DataSource:
       type: object
