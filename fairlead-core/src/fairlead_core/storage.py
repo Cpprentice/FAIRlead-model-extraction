@@ -1,8 +1,9 @@
+import functools
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from pathlib import Path
 import shutil
-from typing import Dict, IO, List, Tuple, Any
+from typing import Dict, IO, List, Tuple, Any, Callable
 
 import yaml
 
@@ -15,6 +16,10 @@ class DataSourceStorage(ABC):
     @contextmanager
     @abstractmethod
     def get_data(self, name: str) -> Dict[str, IO]:
+        ...
+
+    @abstractmethod
+    def get_data_factory(self, name: str) -> dict[str, dict[str, Callable[[], IO]]]:
         ...
 
     @abstractmethod
@@ -43,19 +48,48 @@ class DataSourceStorage(ABC):
 
 class ManualFilesystemDataSourceStorage(DataSourceStorage):
 
-    def __init__(self, files: Dict[str, Tuple[str, Dict[str, Path]]]):
+    def __init__(
+            self,
+            files: Dict[str, Tuple[str, Dict[str, Path]]],
+            cache_path: Path = None,
+            settings_path: Path = None
+    ):
         self.files = files
+        self.cache_path = cache_path
+        self.settings_path = settings_path
 
     @contextmanager
     def get_data(self, name: str) -> Dict[str, IO]:
         data = {}
         try:
+            if self.cache_path is not None and self.cache_path.is_dir():
+                for file_path in self.cache_path.iterdir():
+                    if file_path.is_file():
+                        data[file_path.name] = file_path.open('rb')
+
+            # manually set files should override same files in cache dir
             for input_name, file_path in self.files[name][1].items():
                 data[input_name] = file_path.open('rb')
             yield data
         finally:
             for stream in data.values():
                 stream.close()
+
+    def get_data_factory(self, name: str) -> dict[str, dict[str, Callable[[], IO]]]:
+        data = {}
+        data_wrapper = {
+            'data': data
+        }
+        if self.cache_path is not None and self.cache_path.is_dir():
+            for file_path in self.cache_path.iterdir():
+                if file_path.is_file():
+                    data[file_path.name] = functools.partial(file_path.open, 'rb')
+
+        # manually set files should override same files in cache dir
+        for input_name, file_path in self.files[name][1].items():
+            data[input_name] = functools.partial(file_path.open, 'rb')
+        return data_wrapper
+
 
     def insert_data(self, name: str, plugin_name: str, parts: Dict[str, IO]):
         raise NotImplementedError()
@@ -70,13 +104,36 @@ class ManualFilesystemDataSourceStorage(DataSourceStorage):
         return list(self.files.keys())
 
     def get_file_path(self, data_source_name: str, part_name: str) -> Path:
-        return self.files[data_source_name][1][part_name]
+        try:
+            return self.files[data_source_name][1][part_name]
+        except KeyError as e:
+            # Path was not given manually - caching needs a default storage location
+            if self.cache_path is None:
+                raise RuntimeError('Cache path is required') from e
+            return self.cache_path / part_name
+
 
     def get_data_source_settings(self, data_source_name: str) -> dict[str, Any]:
+        if self.settings_path is not None:
+            with open(self.settings_path, 'r') as stream:
+                return yaml.safe_load(stream)
         return {}
 
 
 class FilesystemDataSourceStorage(DataSourceStorage):
+
+    def get_data_factory(self, name: str) -> dict[str, dict[str, Callable[[], IO]]]:
+        read_directory_path = self.storage_path / name
+        if not read_directory_path.is_dir():
+            return {}
+        inner = {}
+        data = {
+            '': inner
+        }
+        for file_path in read_directory_path.iterdir():
+            if file_path.is_file():
+                inner[file_path.name] = functools.partial(file_path.open, 'rb')
+        return data
 
     def __init__(self, storage_path: Path):
         self.storage_path = Path(storage_path)

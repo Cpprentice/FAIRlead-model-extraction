@@ -108,7 +108,8 @@ dependencies = [
   "PyYAML~=6.0.1",
   "networkx~=3.3",
   "owlready2~=0.47",
-  "curies~=0.10.10"
+  "curies~=0.10.10",
+  "jsonpatch-trigger==0.2.0"
 ]
 
 [project.optional-dependencies]

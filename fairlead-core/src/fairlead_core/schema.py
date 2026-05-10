@@ -3,22 +3,23 @@ import io
 import json
 import sys
 from contextlib import suppress
+from dataclasses import asdict
 from types import NoneType
 from typing import BinaryIO, List, TextIO, Tuple, Sequence, get_origin, get_args, Any, Dict, Annotated, Union
 
-import rdflib
 import yaml
-from pydantic import BaseModel, BaseConfig, PydanticUndefinedAnnotation, create_model, ValidationError
-from pydantic.v1.utils import deep_update
-from pydantic_core.core_schema import ModelField
-from pydantic_partial import create_partial_model
+from jsonpatch_trigger import AddOperation, make_jsonpath
+from linkml_runtime.linkml_model import SchemaDefinition
+from pydantic import BaseModel, PydanticUndefinedAnnotation, create_model, ValidationError
 from pydantic_partial._compat import PydanticCompat
-from rdflib import Namespace
 
 from fairlead_core.cardinality import create_cardinality
-from fairlead_core.rdf import build_graph
+from fairlead_core.patching import convert_schema_enhancement_to_execution_context
+# from fairlead_core.patching import PatchOperation
+from fairlead_core.settings import OptimizationSettings
 from fairlead_core.storage import DataSourceStorage
-from simpler_model import Entity, Attribute
+from fairlead_core.performance import profile
+from simpler_model import Entity, Attribute, SchemaEnhancement, GenericEnhancementOperation, GenericEnhancementHandler
 
 try:
     from simpler_model import Relation
@@ -28,6 +29,67 @@ except ImportError:
     Relation = EntityLink
 
 schema_correction_file_name = 'schema-correction'
+schema_enhancement_file_name = 'schema-enhancement.json'
+
+
+def load_schema_enhancement(
+        storage: DataSourceStorage,
+        schema_name: str
+) -> SchemaEnhancement:
+    with storage.get_data(schema_name) as stream_lookup:
+        if schema_enhancement_file_name in stream_lookup:
+            content = stream_lookup[schema_enhancement_file_name].read()
+            return SchemaEnhancement.model_validate_json(content)
+    return SchemaEnhancement(operations=[], producers=[])
+
+
+def serialize_schema_definition(schema_definition: SchemaDefinition) -> dict:
+    return asdict(schema_definition)
+
+
+def add_enhancement_operation(storage: DataSourceStorage, schema_name: str, operation: GenericEnhancementOperation):
+    schema_enhancement = load_schema_enhancement(storage, schema_name)
+    schema_enhancement.operations.append(operation)
+    _ = convert_schema_enhancement_to_execution_context(schema_enhancement)
+    file_path = storage.get_file_path(schema_name, schema_enhancement_file_name)
+    file_path.write_text(json.dumps(schema_enhancement.to_dict(), indent=4))
+
+
+def add_enhancement_handler(storage: DataSourceStorage, schema_name: str, handler: GenericEnhancementHandler):
+    schema_enhancement = load_schema_enhancement(storage, schema_name)
+    schema_enhancement.producers.append(handler)
+    _ = convert_schema_enhancement_to_execution_context(schema_enhancement)
+    file_path = storage.get_file_path(schema_name, schema_enhancement_file_name)
+    file_path.write_text(json.dumps(schema_enhancement.to_dict(), indent=4))
+
+
+@profile
+def apply_schema_enhancement(schema: SchemaDefinition, schema_enhancement: SchemaEnhancement, settings: OptimizationSettings) -> SchemaDefinition:
+# def apply_schema_enhancement(schema: SchemaDefinition, schema_enhancement: SchemaEnhancement, settings: dict[str, Any]) -> SchemaDefinition:
+    if len(schema_enhancement.operations) == 0 and len(schema_enhancement.producers) == 0:
+        return schema
+    document = serialize_schema_definition(schema)
+    context = convert_schema_enhancement_to_execution_context(schema_enhancement)
+    context.use_settings(settings)
+    context.insert_custom_operation(AddOperation(locator=make_jsonpath('$'), value=document), 0)
+    final_document = context.run({})
+    # yaml_loader = YAMLLoader()
+    # schema: SchemaDefinition
+    # schema = yaml_loader.load(path, target_class=SchemaDefinition, **kwargs)
+    result_schema = SchemaDefinition(**final_document)
+
+    # Fix extensions because they are not typed
+    # TODO this does not work at the moment ... unclear why - somehow the yamlroot which is a jsonobj forces this conversion
+    # for class_name, class_ in result_schema.classes.items():
+    #     if class_.extensions:
+    #         for extension_tag, extension in class_.extensions.items():
+    #             converted = as_dict(class_.extensions[extension_tag].value)
+    #             print(type(converted))
+    #             del class_.extensions[extension_tag]
+    #             new_extension = Extension(tag=extension_tag, value=converted)
+    #             class_.extensions[extension_tag] = new_extension
+
+    return result_schema
 
 
 def apply_schema_correction_if_available(
@@ -511,6 +573,25 @@ def multi_merge(entity_lists: list[list[PartialEntity]]) -> list[Entity]:
         for entity_list in entity_lists
     ])
     return [Entity(**x) for x in merged_dict_list]
+
+
+# def produce_automatic_patch_operation_list(
+#         schema: SchemaDefinition,
+#         existing_operations: list[PatchOperation]
+# ) -> list[PatchOperation]:
+#     operations = []
+#     view = SchemaView(schema)
+#
+#     # Operation 1: make relation from ID attributes
+#     for class_key, class_ in view.all_classes().items():
+#         for slot in view.class_induced_slots(class_key):
+#             slot_range = slot.range  # TODO update linkml-runtime and fetch induced range - my hotfix might not be needed for generated schemas - only for linkml imports maybe
+#             if slot_range not in set(view.all_types().keys()):
+#                 attribute = slot
+#                 if attribute.name.lower().endswith('_id'):
+#                     operations.append(ConvertAttributeToRelationOperation())
+#
+#     return operations
 
 
 def optimize_schema(entities: List[Entity]):
