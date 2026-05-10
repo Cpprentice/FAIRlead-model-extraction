@@ -1,0 +1,28 @@
+inputSpec: /local/spec/0/openapi3_1_merged.yaml
+additionalProperties:
+  allowUnicodeIdentifiers: false
+  disallowAdditionalPropertiesIfNotPresent: false
+  ensureUniqueParams: true
+  enumNameSuffix: Enum
+  enumPropertyNaming: PascalCase
+  enumPropertyNamingReplaceSpecialChar: false
+  enumUnknownDefaultCase: false
+  importFileExtension: ""
+  legacyDiscriminatorBehavior: true
+  modelPropertyNaming: camelCase
+  npmName: schema_api
+  npmRepository: ""
+  # npmVersion: 0.1.0
+  nullSafeAdditionalProps: false
+  paramNaming: camelCase
+  prefixParameterInterfaces: false
+  prependFormOrBodyParameters: false
+  sagasAndRecords: false
+  snapshot: true
+  sortModelPropertiesByRequiredFlag: true
+  sortParamsByRequiredFlag: true
+  stringEnums: false
+  supportsES6: true # this is not the default
+  useSingleRequestParameter: false # this is not the default
+  withInterfaces: false
+  withoutRuntimeChecks: false

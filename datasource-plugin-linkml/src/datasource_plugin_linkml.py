@@ -26,8 +26,11 @@ class LinkmlDataSourceType(DataSourceType):
 class LinkmlDataSourcePlugin(DataSourcePlugin):
     data_source_type = LinkmlDataSourceType()
 
-    def get_strong_entities(self, name: str) -> List[Entity]:
-        pass
+    def get_schema(self, name: str) -> SchemaDefinition:
+        with self.storage.get_data(name) as stream_lookup:
+            schema_text = io.TextIOWrapper(stream_lookup['schema'], encoding='utf-8').read()
+            schema_view = SchemaView(schema_text)
+        return schema_view.schema
 
     def get_all_entities(self, name: str) -> List[Entity]:
         with self.storage.get_data(name) as stream_lookup:
@@ -125,9 +128,6 @@ class LinkmlDataSourcePlugin(DataSourcePlugin):
         # TODO collect all jsonpaths to each entity (does obviously not work when reading rdf data - for csv we can use the linkml container pattern)
 
         return entities
-
-    def get_related_entity_links(self, name: str) -> List[EntityLink]:
-        pass
 
     def get_entity_by_id(self, name: str, entity_id: str) -> Entity:
         pass

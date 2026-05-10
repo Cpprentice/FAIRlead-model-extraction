@@ -399,9 +399,6 @@ class OwlDataSourcePlugin(DataSourcePlugin):
 
         return entities
 
-    def get_strong_entities(self, name: str) -> List[Entity]:
-        pass
-
     def get_all_entities(self, name: str) -> List[Entity]:
         entity_lookup = self._get_entity_dict(name, only_include_if_data_exists=False)
         return [
@@ -409,9 +406,6 @@ class OwlDataSourcePlugin(DataSourcePlugin):
             for entity_list in entity_lookup.values()
             for entity in entity_list
         ]
-
-    def get_related_entity_links(self, name: str) -> List[EntityLink]:
-        pass
 
     def get_entity_by_id(self, name: str, entity_id: str) -> Entity:
         pass
@@ -428,17 +422,11 @@ class SparqlDataSourcePlugin(DataSourcePlugin):
         # TODO some code to produce an interface to send queries to a SPARQL endpoint
         return None
 
-    def get_strong_entities(self, name: str) -> List[Entity]:
-        pass
-
     def get_all_entities(self, name: str) -> List[Entity]:
         connector = self.get_connector(name)
         result = connector.run_query(entity_query_template.format(connector.base_url))
 
         # TODO query for relations, attributes and keys
-
-    def get_related_entity_links(self, name: str) -> List[EntityLink]:
-        pass
 
     def get_entity_by_id(self, name: str, entity_id: str) -> Entity:
         pass

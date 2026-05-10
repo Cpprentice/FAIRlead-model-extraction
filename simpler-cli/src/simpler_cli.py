@@ -6,11 +6,19 @@ from argparse import ArgumentParser, ArgumentError, Namespace
 from pathlib import Path
 from typing import List, Callable
 
+import yaml
+from jsonasobj2 import JsonObj
+from linkml_runtime.utils.yamlutils import as_yaml
+from yaml import Dumper, SafeDumper
+
 from fairlead_core.dot import create_graph, filter_graph
-from fairlead_core.plugin import DataSourcePlugin, DataSourceCursor, DataSourceType, OptimizationSettings
+from fairlead_core.plugin import DataSourcePlugin, DataSourceCursor, DataSourceType
 from fairlead_core.schema import serialize_entity_list_to_yaml, load_external_schema_from_yaml, extend_schema_from_yaml, \
-    apply_schema_correction_if_available, introduce_inverse_relations
+    apply_schema_correction_if_available, introduce_inverse_relations, load_schema_enhancement, apply_schema_enhancement
+from fairlead_core.settings import OptimizationSettings
 from fairlead_core.storage import ManualFilesystemDataSourceStorage
+from fairlead_core.performance import profile
+from fairlead_core.units import initialize_unit_lookup
 
 
 def get_arg_parser(plugins: List[DataSourceType]) -> ArgumentParser:
@@ -18,6 +26,9 @@ def get_arg_parser(plugins: List[DataSourceType]) -> ArgumentParser:
     parser = ArgumentParser(prog='simpler-cli')
     sub_commands = parser.add_subparsers(dest='command', required=True)
     extract_command_parser = ecp = sub_commands.add_parser('extract')
+    ecp.add_argument('--linkml', action='store_true', help='Use new linkML generation mode and output')
+    ecp.add_argument('-c', '--cache-path', type=Path, help='Cache path if needed by plugin', default=None)
+    ecp.add_argument('-s', '--settings-path', type=Path, help='Path to plugin file if needed', default=None)
     ecp.add_argument('-p', '--plugin', required=True, help='The plugin to use to extract schema data',
                      choices=plugin_names)
     ecp.add_argument('-i', '--input', action='append', required=True,
@@ -86,8 +97,10 @@ def schema_command(args: Namespace, parser: ArgumentParser):
 
 
 @command('extract')
+@profile
 def extract_command(args: Namespace, parser: ArgumentParser):
     plugins = DataSourcePlugin.get_data_source_types()
+    initialize_unit_lookup()
 
     selected_plugin, = [p for p in plugins if p.name == args.plugin]
     input_lookup = {
@@ -107,7 +120,7 @@ def extract_command(args: Namespace, parser: ArgumentParser):
             for input_string in args.input
             for input_name, input_path in [input_string.split(':')]
         })
-    })
+    }, cache_path=args.cache_path, settings_path=args.settings_path)
     plugin = class_(storage)
     optimization_settings = OptimizationSettings(
         prevent_optimization=args.prevent_optimization,
@@ -116,26 +129,49 @@ def extract_command(args: Namespace, parser: ArgumentParser):
     )
     cursor: DataSourceCursor = plugin.get_cursor('cli', optimization_settings)
 
-    entities = cursor.get_all_entities()
+    if args.linkml:
+        schema = cursor.get_schema()
+        schema_enhancement = load_schema_enhancement(cursor.plugin.storage, 'cli')
+        schema = apply_schema_enhancement(schema, schema_enhancement, optimization_settings)
 
-    output_string = ''
+        def json_obj_representer(dumper: SafeDumper, data: JsonObj):
+            return dumper.represent_mapping(
+                "tag:yaml.org,2002:map",
+                data._as_dict
+            )
 
-    if args.format == 'DOT':
-        dot = create_graph(entities, show_attributes=not args.hide_arguments)
-        if args.select_entity:
-            dot = filter_graph(dot, args.select_entity, args.distance)
-        output_string = str(dot)
-    elif args.format == 'JSON':
-        dicts = [m.dict() for m in entities]
-        output_string = json.dumps(dicts, indent=4)
-    elif args.format == 'YAML':
-        output_string = serialize_entity_list_to_yaml(entities)
+        yaml.SafeDumper.add_representer(
+            JsonObj,
+            json_obj_representer
+        )
 
-    if args.output is not None:
-        with open(args.output, 'w') as stream:
-            stream.write(output_string)
+        schema_yaml = as_yaml(schema)
+        if args.output is not None:
+            with open(args.output, 'w') as stream:
+                stream.write(schema_yaml)
+        else:
+            print(schema_yaml)
     else:
-        print(output_string)
+        entities = cursor.get_all_entities()
+
+        output_string = ''
+
+        if args.format == 'DOT':
+            dot = create_graph(entities, show_attributes=not args.hide_arguments)
+            if args.select_entity:
+                dot = filter_graph(dot, args.select_entity, args.distance)
+            output_string = str(dot)
+        elif args.format == 'JSON':
+            dicts = [m.dict() for m in entities]
+            output_string = json.dumps(dicts, indent=4)
+        elif args.format == 'YAML':
+            output_string = serialize_entity_list_to_yaml(entities)
+
+        if args.output is not None:
+            with open(args.output, 'w') as stream:
+                stream.write(output_string)
+        else:
+            print(output_string)
 
 
 @command('dot')
@@ -154,6 +190,8 @@ def load_all_plugin_modules():
     """
     for module in pkgutil.iter_modules():
         if module.name.startswith('simpler_plugin_'):
+            importlib.import_module(module.name)
+        if module.name.startswith('datasource_plugin_'):
             importlib.import_module(module.name)
 
 

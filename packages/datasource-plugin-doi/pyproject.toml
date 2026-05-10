@@ -26,7 +26,7 @@ build-backend = "setuptools.build_meta"  # If not defined, then legacy behavior 
 # There are some restrictions on what makes a valid project name
 # specification here:
 # https://packaging.python.org/specifications/core-metadata/#name
-name = "fairlead-datasource-plugin-linkml"  # REQUIRED, is the only field that cannot be marked as dynamic.
+name = "fairlead-datasource-plugin-doi"  # REQUIRED, is the only field that cannot be marked as dynamic.
 
 # Versions should comply with PEP 440:
 # https://www.python.org/dev/peps/pep-0440/
@@ -39,7 +39,7 @@ dynamic = ["version"]
 # This is a one-line description or tagline of what your project does. This
 # corresponds to the "Summary" metadata field:
 # https://packaging.python.org/specifications/core-metadata/#summary
-description = "Plugin to handle data from the Open Energy Database"
+description = "Plugin to extract linkml models from datasets with a DOI"
 
 # This is an optional longer description of your project that represents
 # the body of text which users will see when they visit PyPI.
@@ -68,7 +68,7 @@ requires-python = ">=3.12"
 # Note that this is a list of additional keywords, separated
 # by commas, to be used to assist searching for the distribution in a
 # larger catalog.
-keywords = ["entity-relationship-model", "ER", "extraction", "model", "LinkML"]
+keywords = ["entity-relationship-model", "ER", "extraction", "model", "DOI", "fairlead"]
 
 authors = [
   {name = "Philipp Schmurr", email = "philipp.schmurr@kit.edu" }
@@ -155,4 +155,4 @@ dependencies = [
 
 [tool.setuptools_scm]
 root = ".."
-git_describe_command = "git describe --long --match plugin-linkml-*"
+git_describe_command = "git describe --long --match plugin-doi-*"

@@ -112,14 +112,8 @@ class OpenApiDataSourcePlugin(DataSourcePlugin):
         models = parser.results
         return JSONDataSourcePlugin.generate_model_from_parsed_schema(models)
 
-    def get_strong_entities(self, name: str) -> List[Entity]:
-        pass
-
     def get_all_entities(self, name: str) -> List[Entity]:
         return self._create_schema(name)
-
-    def get_related_entity_links(self, name: str) -> List[EntityLink]:
-        pass
 
     def get_entity_by_id(self, name: str, entity_id: str) -> Entity:
         pass
@@ -136,13 +130,7 @@ class WsdlDataSourceType(DataSourceType):
 class WsdlDataSourcePlugin(DataSourcePlugin):
     data_source_type = WsdlDataSourceType()
 
-    def get_strong_entities(self, name: str) -> List[Entity]:
-        pass
-
     def get_all_entities(self, name: str) -> List[Entity]:
-        pass
-
-    def get_related_entity_links(self, name: str) -> List[EntityLink]:
         pass
 
     def get_entity_by_id(self, name: str, entity_id: str) -> Entity:

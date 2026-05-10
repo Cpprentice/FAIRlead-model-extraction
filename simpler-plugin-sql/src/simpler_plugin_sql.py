@@ -10,6 +10,8 @@ from dataclasses import dataclass
 from types import SimpleNamespace
 from typing import List, Dict, Set
 
+from linkml_runtime.linkml_model import SchemaDefinition, SlotDefinition, ClassDefinition
+from linkml_runtime.utils.schema_builder import SchemaBuilder
 from sqlalchemy import create_engine, Connection, text, MetaData, ForeignKey as SqlForeignKey, Column as SqlColumn, \
     Table, select
 from sqlalchemy.orm import declarative_base
@@ -298,6 +300,32 @@ class BaseSqlDataSourcePlugin(DataSourcePlugin):
         return attribute_lookup
 
     @staticmethod
+    def _get_linkml_attribute_lookup(metadata: MetaData) -> dict[str, list[SlotDefinition]]:
+        attribute_lookup = collections.defaultdict(list)
+
+        for table in metadata.tables.values():
+
+
+            table_index_lookup = collections.defaultdict(lambda: False)
+            for index in table.indexes:
+                for column in index.columns:
+                    table_index_lookup[column.name] = True
+
+
+            for rank, column in enumerate(table.columns):
+                attribute_lookup[column.table.name].append(SlotDefinition(
+                    name=column.name,
+                    key=column.primary_key or (not column.nullable and column.unique) or
+                        column.index is not None or table_index_lookup[column.name] or None,
+                    required=not column.nullable,
+                    range=column.type,
+                    rank=rank
+                    # TODO Should we consider unique constraints as well <- we do if they are not nullable
+                    #  however for the sqlite db of sincal it seems the unique flag is None even for unique columns
+                ))
+        return attribute_lookup
+
+    @staticmethod
     def _get_foreign_keys_that_apply_to_determining_entity_weakness(foreign_keys: List[ForeignKey]) -> List[ForeignKey]:
         ignorable_fks: Set[ForeignKey] = set()
 
@@ -323,8 +351,106 @@ class BaseSqlDataSourcePlugin(DataSourcePlugin):
 
         return filtered_foreign_key_objects
 
-    def get_strong_entities(self, name: str) -> List[Entity]:
-        pass
+    def get_schema(self, name: str) -> SchemaDefinition:
+        builder = SchemaBuilder(name)
+        metadata = self.get_metadata(name)
+        with (self.get_sql_cursor(name) as cursor):
+
+            table_names = self._get_table_names(metadata)
+            foreign_key_objects = self._get_foreign_key_objects(metadata)
+            filtered_foreign_key_objects = \
+                self._get_foreign_keys_that_apply_to_determining_entity_weakness(foreign_key_objects)
+            attribute_lookup = self._get_linkml_attribute_lookup(metadata)
+
+            grouped_foreign_keys = collections.defaultdict(list)
+            for f_key in filtered_foreign_key_objects:
+                grouped_foreign_keys[f_key.constraint_name].append(f_key)
+
+            cardinalities = {
+                (fk.source, fk.target): (0, 1) if any(x.nullable for x in group) else (1, 1)
+                for constraint_name, group in grouped_foreign_keys.items()
+                for fk in group
+            }
+            added_transitives = {1}
+            while added_transitives:
+                added_transitives = set()
+                for (source, target), cardinality in cardinalities.items():
+                    for (inner_source, inner_target), inner_cardinality in cardinalities.items():
+                        if target == inner_source and (source, inner_target) not in cardinalities:
+                            added_transitives.add((
+                                (source, inner_target),
+                                merge_cardinalities(cardinality, inner_cardinality)
+                            ))
+                for key, value in added_transitives:
+                    cardinalities[key] = value
+            grouped_cardinalities = collections.defaultdict(list)
+            for (source, target), cardinality in cardinalities.items():
+                source_table_name, _ = source.rsplit('.', maxsplit=1)
+                target_table_name, _ = target.rsplit('.', maxsplit=1)
+                grouped_cardinalities[(source_table_name, target_table_name)].append(cardinality)
+            cardinality_implications = {
+                key: functools.reduce(merge_cardinalities, cardinality_list, cardinality_list[0])
+                for key, cardinality_list in grouped_cardinalities.items()
+            }
+
+            # entities = []
+            for table_name in table_names:
+                name_set = set()
+                short_name = table_name.replace('public.', '')
+                # relations = []
+                relation_slot_names = []
+
+                for foreign_key in foreign_key_objects:
+                    # if foreign_key.primary_table == table_name:
+                    if foreign_key.foreign_table == table_name:
+                        # fk_short_name = foreign_key.foreign_table.replace('public.', '')
+                        fk_short_name = foreign_key.primary_table.replace('public.', '')
+
+                        if fk_short_name not in name_set:
+                            name_set.add(fk_short_name)
+
+                            subject_cardinality = create_cardinality((0, sys.maxsize))
+                            if (foreign_key.primary_table, table_name) in cardinality_implications:
+                                subject_cardinality = create_cardinality(
+                                    cardinality_implications[(foreign_key.primary_table, table_name)])
+
+                            builder.add_slot(SlotDefinition(
+                                name=foreign_key.constraint_name,
+                                range=fk_short_name,
+                                domain=short_name,
+                                required=not foreign_key.nullable,
+                                # TODO think about something for an identifying relation
+                                identifier=foreign_key in filtered_foreign_key_objects or None
+                            ))
+                            relation_slot_names.append(foreign_key.constraint_name)
+                            # relations.append(
+                            #     Relation(
+                            #         relation_name=[foreign_key.constraint_name],
+                            #         has_object_entity=fk_short_name,
+                            #         has_subject_entity=short_name,
+                            #         object_cardinality=create_cardinality((0, 1) if
+                            #                                               foreign_key.nullable else (1, 1)),
+                            #         subject_cardinality=subject_cardinality,
+                            #         has_attribute=[],
+                            #         has_relation_modifier=[RelationModifier(relation_modifier='identifying')]
+                            #         if foreign_key in filtered_foreign_key_objects else None
+                            #     )
+                            # )
+                is_weak = any(foreign_key.foreign_table == table_name for foreign_key in filtered_foreign_key_objects)
+                # is_weak = any(foreign_key.primary_table == table_name for foreign_key in filtered_foreign_key_objects)
+                builder.add_class(ClassDefinition(
+                    name=short_name,
+                    attributes=attribute_lookup[table_name],
+                    slots=relation_slot_names,  # this should auto encode weakness if any of the slots is an identifier
+                ))
+                # entities.append(Entity(
+                #     entity_name=[short_name],
+                #     has_attribute=attribute_lookup[table_name],
+                #     has_entity_modifier=None if not is_weak else [EntityModifier(entity_modifier='weak')],
+                #     is_object_in_relation=[],
+                #     is_subject_in_relation=relations
+                # ))
+        return builder.schema
 
     def get_all_entities(self, name: str) -> List[Entity]:
         metadata = self.get_metadata(name)
@@ -410,9 +536,6 @@ class BaseSqlDataSourcePlugin(DataSourcePlugin):
                     is_subject_in_relation=relations
                 ))
         return entities
-
-    def get_related_entity_links(self, name: str) -> List[EntityLink]:
-        pass
 
     def get_entity_by_id(self, name: str, entity_id: str) -> Entity:
         all_entities = self.get_all_entities(name)
@@ -592,9 +715,6 @@ class OldSqlDataSourcePlugin(DataSourcePlugin):
 
         return filtered_foreign_key_objects
 
-    def get_strong_entities(self, name: str) -> List[Entity]:
-        pass
-
     def get_all_entities(self, name: str) -> List[Entity]:
         with (self.get_sql_cursor(name) as cursor):
 
@@ -678,9 +798,6 @@ class OldSqlDataSourcePlugin(DataSourcePlugin):
                     is_subject_in_relation=relations
                 ))
         return entities
-
-    def get_related_entity_links(self, name: str) -> List[EntityLink]:
-        pass
 
     def get_entity_by_id(self, name: str, entity_id: str) -> Entity:
         all_entities = self.get_all_entities(name)

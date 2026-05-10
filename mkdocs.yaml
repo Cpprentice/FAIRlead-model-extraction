@@ -1,0 +1,34 @@
+site_name: FAIRlead ER Extraction
+site_url: https://CPPrentice.github.io/FAIRlead-model-extraction/
+theme:
+  name: material
+  # favicon: assets/images/logo.png
+  # logo: assets/images/logo.png
+  font: false
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+  palette:
+  # Palette toggle for dark mode
+  - scheme: slate
+    primary: custom
+    toggle:
+      icon: material/brightness-4
+      name: Switch to light mode
+  # Palette toggle for light mode
+  - scheme: default
+    primary: custom
+    toggle:
+      icon: material/brightness-7
+      name: Switch to dark mode
+extra:
+  version:
+    provider: mike
+extra_css:
+  - css/custom.css
+  - https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css
+  - css/swagger-dark.css
+plugins:
+  # - search
+  - neoteroi.mkdocsoad
+repo_url: https://github.com/CPPrentice/FAIRlead-model-extraction

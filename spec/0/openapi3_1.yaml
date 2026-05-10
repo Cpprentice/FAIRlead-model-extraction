@@ -253,6 +253,100 @@ paths:
                 $ref: '#/components/schemas/Schema'
         '404':
           description: 'not found'
+
+
+  # The new corrections are rather called schema enhancement
+  # For now we just use a single endpoint to put the patches for an entire schema - though
+  #  this can be considered a raw endpoint
+  /schemata/{schemaId}/enhancement:
+    put:
+      summary: "Save the entire operations stack for this schema"
+      tags:
+        - enhancement
+      description: Overwrite the patches for the schema entirely
+      operationId: setSchemaEnhancement
+      parameters:
+        - $ref: '#/components/parameters/schemaId'
+      requestBody:
+        description: The entire state of configured schema enhancements
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SchemaEnhancement'
+          application/x-yaml:
+            schema:
+              $ref: '#/components/schemas/SchemaEnhancement'
+      responses:
+        '200': # TODO a 200 might send back the current state?
+          description: 'Operation successful'
+        '404':
+          description: 'Schema not found'
+        '400':
+          description: 'Invalid data format'
+    get:
+      summary: "Get the current schema enhancement"
+      tags:
+        - enhancement
+      description: Fetch all the enhancements of the specified schema
+      operationId: getSchemaEnhancement
+      parameters:
+        - $ref: '#/components/parameters/schemaId'
+      responses:
+        '200':
+          description: 'Operation successful'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaEnhancement'
+        '404':
+          description: 'Schema not found'
+  /schemata/{schemaId}/enhancement/operations:
+    post:
+      summary: "Insert a new enhancement operation"
+      tags:
+        - enhancement
+      operationId: insertEnhancementOperation
+      description: Append a new enhancement operation
+      parameters:
+        - $ref: '#/components/parameters/schemaId'
+      requestBody:
+        description: The new operation
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericEnhancementOperation'
+      responses:
+        '200':
+          description: operation successful
+        '404':
+          description: schema not found
+        '400':
+          description: bad request body
+
+  /schemata/{schemaId}/enhancements/handlers:
+    post:
+      summary: "Insert a new enhancement handler"
+      tags:
+        - enhancement
+      operationId: insertEnhancementHandler
+      description: Append a new enhancement handler
+      parameters:
+        - $ref: '#/components/parameters/schemaId'
+      requestBody:
+        description: The new handler
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenericEnhancementHandler'
+      responses:
+        '200':
+          description: operation successful
+        '404':
+          description: schema not found
+        '400':
+          description: bad request body
+
   # thoughts on the new corrections api
   # /schemata/{schemaId}/corrections -> get or post yaml|json|xml of partial
   # /schemata/{schemaId}/corrections/(entities/)?{entityId}/attributes/{attributeId} DELETE OR PUT for removal or update (of just the name?)

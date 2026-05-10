@@ -41,9 +41,6 @@ class OEDBDataSourcePlugin(DataSourcePlugin):
     def _fetch_raw_data(self, schema_name: str, entity_id: str) -> tuple[bytes, str]:
         return self._make_request(schema_name, 'rows', is_json=False)
 
-    def get_strong_entities(self, name: str) -> List[Entity]:
-        pass
-
     def get_all_entities(self, name: str) -> List[Entity]:
         meta = self._fetch_meta_json(name)
         title = meta['resources'][0]['title']
@@ -63,9 +60,6 @@ class OEDBDataSourcePlugin(DataSourcePlugin):
             has_entity_modifier=[],
         )
         return [entity]
-
-    def get_related_entity_links(self, name: str) -> List[EntityLink]:
-        pass
 
     def get_entity_by_id(self, name: str, entity_id: str) -> Entity:
         pass

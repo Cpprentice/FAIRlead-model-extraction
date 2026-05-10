@@ -5,10 +5,13 @@ import sys
 from pathlib import Path
 from typing import List, Dict, Any
 
+from astroid import ClassDef
 from datamodel_code_generator import generate, InputFileType, DataModelType, PythonVersion, load_yaml
 from datamodel_code_generator.model import get_data_model_types, DataModel
 from datamodel_code_generator.model.pydantic_v2 import RootModel
 from jsonpath import JSONPath
+from linkml_runtime.linkml_model import SchemaDefinition, SlotDefinition, ClassDefinition
+from linkml_runtime.utils.schema_builder import SchemaBuilder
 
 from fairlead_core.cardinality import create_cardinality
 from fairlead_core.plugin import DataSourceType, DataSourcePlugin, EntityLink, InputFlag
@@ -28,6 +31,9 @@ class JSONDataSourcePlugin(DataSourcePlugin):
 
     data_source_type = JSONDataSourceType()
 
+    def get_schema(self, name: str) -> SchemaDefinition:
+        return self._generate_schema_from_json_data(name)
+
     def _produce_json_data_obj(self, schema_name: str) -> dict|list|int|str|None:
         with self.storage.get_data(schema_name) as stream_lookup:
             data_content = stream_lookup['data'].read().decode('utf-8')
@@ -40,6 +46,74 @@ class JSONDataSourcePlugin(DataSourcePlugin):
     def _generate_model_from_json_data(self, schema_name: str):
         obj = self._produce_json_data_obj(schema_name)
         return self.generate_model_from_dict(obj)
+
+    def _generate_schema_from_json_data(self, schema_name: str) -> SchemaDefinition:
+        obj = self._produce_json_data_obj(schema_name)
+        return self.generate_schema_from_dict(obj, schema_name)
+
+    @staticmethod
+    def generate_schema_from_internal_model(models: list[DataModel], schema_name: str) -> SchemaDefinition:
+        builder = SchemaBuilder(schema_name)
+        target_name_lookup = {
+            model.path: model.class_name
+            for model in models
+        }
+        for model in models:
+            # if isinstance(model, RootModel):
+            #     continue  # TODO find out how to handle this. It seems this happens for type aliases (e.g. EntityLink für str)
+
+            relation_names = []
+            attributes = []
+
+            if not isinstance(model, RootModel):
+                for rank, field in enumerate(model.fields):
+                    if len(field.unresolved_types) == 0:
+                        attributes.append(SlotDefinition(
+                            name=field.name,
+                            rank=rank
+                        ))
+                    else:
+                        type_hint_string = field.type_hint.lower()
+                        optional_match = re.match(r'optional\[(.*)]', type_hint_string)
+                        type_hint_string_without_optional = type_hint_string
+                        has_optional = False
+                        if optional_match is not None:
+                            has_optional = True
+                            type_hint_string_without_optional = optional_match.group(1)
+                        collection_match = re.match(
+                            r'(collection|sequence|mutablesequence|set|mutableset|mapping|mutablemapping|'
+                            r'list|deque|dict|ordereddict)(?:\[(.+)])?',
+                            type_hint_string_without_optional
+                        )
+                        is_collection = collection_match is not None
+
+                        object_cardinality_min = 1
+                        object_cardinality_max = 1
+
+                        if is_collection:
+                            object_cardinality_max = sys.maxsize
+                            object_cardinality_min = 0
+                        if has_optional:
+                            object_cardinality_min = 0
+
+                        object_cardinality = (object_cardinality_min, object_cardinality_max)
+
+                        target_path, = field.unresolved_types
+                        builder.add_slot(SlotDefinition(
+                            name=field.name,
+                            multivalued=is_collection,
+                            range=target_name_lookup[target_path],
+                            required=object_cardinality_min > 0,
+                            rank=rank
+                        ))
+                        relation_names.append(field.name)
+
+            builder.add_class(ClassDefinition(
+                name=model.class_name,
+                attributes=attributes,
+                slots=relation_names
+            ))
+        return builder.schema
 
     @staticmethod
     def generate_model_from_parsed_schema(models: List[DataModel]) -> List[Entity]:
@@ -121,7 +195,9 @@ class JSONDataSourcePlugin(DataSourcePlugin):
     @staticmethod
     def _generate_internal_data_model(obj: Dict) -> list[DataModel]:
         builder = JSONDataSourcePlugin._create_schema_builder_from_json_object(obj)
-        schema_text = json.dumps(builder.to_schema())
+        schema_text = json.dumps(builder.to_schema(), ensure_ascii=False)
+
+        schema_text = schema_text.encode('unicode_escape').decode('utf-8')
 
         data_model_types = get_data_model_types(DataModelType.PydanticV2BaseModel, PythonVersion.PY_312)
         from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
@@ -219,14 +295,13 @@ class JSONDataSourcePlugin(DataSourcePlugin):
         models = JSONDataSourcePlugin._generate_internal_data_model(obj)
         return JSONDataSourcePlugin.generate_model_from_parsed_schema(models)
 
-    def get_strong_entities(self, name: str) -> List[Entity]:
-        pass
+    @staticmethod
+    def generate_schema_from_dict(obj: dict, schema_name: str) -> SchemaDefinition:
+        models = JSONDataSourcePlugin._generate_internal_data_model(obj)
+        return JSONDataSourcePlugin.generate_schema_from_internal_model(models, schema_name)
 
     def get_all_entities(self, name: str) -> List[Entity]:
         return self._generate_model_from_json_data(name)
-
-    def get_related_entity_links(self, name: str) -> List[EntityLink]:
-        pass
 
     def get_entity_by_id(self, name: str, entity_id: str) -> Entity:
         pass

@@ -12,3 +12,4 @@ spec/0/openapi3_1_merged.yaml
 dist/
 spec_markdown/docs
 simpler-api/static
+profile_output*

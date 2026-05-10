@@ -695,16 +695,9 @@ class XmlDataSourcePlugin(DataSourcePlugin):
             return self._build_data_only_schema(data_root)
         return self._generate_xsd_schema(schema, data_root)
 
-    def get_strong_entities(self, name: str) -> List[Entity]:
-        entities = self._generate_model(name)
-        return entities['']
-
     def get_all_entities(self, name: str) -> List[Entity]:
         entities = self._generate_model(name)
         return [x for inner in entities.values() for x in inner]
-
-    def get_related_entity_links(self, name: str) -> List[Relation]:
-        pass
 
     def get_entity_by_id(self, name: str, entity_id: str) -> Entity:
         entities = self._generate_model(name)
