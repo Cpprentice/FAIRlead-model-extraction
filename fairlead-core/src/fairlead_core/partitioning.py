@@ -4,6 +4,9 @@ import math
 from types import SimpleNamespace
 
 import networkx as nx
+from linkml_runtime import SchemaView
+from linkml_runtime.linkml_model import SchemaDefinition, ClassDefinition
+from linkml_runtime.utils.schema_builder import SchemaBuilder
 
 from simpler_model import Entity, Partition
 
@@ -87,6 +90,82 @@ def create_partitioned_entity_list(
         )
         for idx, partition in enumerate(nx_partitions)
     ]
+
+
+def create_filtered_class_list(schema: SchemaDefinition, start_nodes: list[str], max_distance: int) -> SchemaDefinition:
+    graph = create_nx_graph_from_schema(schema)
+    reduced_graph = filter_nx_graph(graph, start_nodes, max_distance)
+    sv = SchemaView(schema)
+    builder = SchemaBuilder(name=f'{sv.schema.name}_filtered', id=f'{sv.schema.id}_filtered')
+
+
+    for type_ in sv.all_types().values():
+        builder.add_type(type_)
+
+    for enum in sv.all_enums().values():
+        builder.add_enum(enum)
+
+    for slot in sv.all_slots(attributes=False).values():
+        builder.add_slot(slot)
+
+    for x in sorted(reduced_graph.nodes):
+        builder.add_class(sv.get_class(x))
+    return builder.schema
+
+    to_visit_classes = set(start_nodes)
+    classes = set()
+    slots = set()
+    types = set()
+    enums = set()
+
+    while to_visit_classes:
+        c = to_visit_classes.pop()
+        if c in classes:
+            continue
+
+        classes.add(c)
+
+        # inheritance closure
+        to_visit_classes.update(sv.class_parents(c))
+        to_visit_classes.update(sv.class_children(c))
+
+        # slots
+        for s in sv.class_slots(c):
+            slots.add(s)
+            rng = sv.get_slot(s).range
+
+            if rng in sv.all_classes():
+                to_visit_classes.add(rng)
+            elif rng in sv.all_types():
+                types.add(rng)
+            elif rng in sv.all_enums():
+                enums.add(rng)
+
+    for type_name in types:
+        builder.add_type(sv.get_type(type_name))
+    for enum_name in enums:
+        builder.add_enum(sv.get_enum(enum_name))
+    for class_name in classes:
+        builder.add_class(sv.get_class(class_name))
+    for slot_name in slots:
+        builder.add_slot(sv.get_slot(slot_name))
+
+    return builder.schema
+
+
+def create_nx_graph_from_schema(schema: SchemaDefinition) -> nx.Graph:
+    view = SchemaView(schema)
+    g = nx.Graph()
+    for class_name, class_ in view.all_classes().items():  # change ordering?
+        g.add_node(class_name)
+    g.add_edges_from([
+        (class_name, view.induced_slot(slot_name, class_name).range)
+        for class_name, class_ in view.all_classes().items()
+        for slot_name in view.class_slots(class_name, attributes=False)
+        # for slot in view.class_induced_slots(class_name)
+
+    ])
+    return g
 
 
 def create_filtered_entity_list(entities: list[Entity], start_nodes: list[str], max_distance: int) -> list[Entity]:

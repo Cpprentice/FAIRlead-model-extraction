@@ -11,6 +11,7 @@ from linkml_runtime.utils.yamlutils import as_yaml
 from yaml import SafeDumper
 
 from fairlead_core.metadata import convert_schema_to_oemetadata
+from fairlead_core.partitioning import create_filtered_class_list
 from fairlead_core.plugin import InputDataError
 from simpler_api.impl.mapping import make_class_definition_view
 from simpler_api.impl.plugins import get_cursor
@@ -96,7 +97,8 @@ class SchemaApi(BaseSchemaApi):
         schemaId: str,
         prevent_structural_enhancement: bool,
         prevent_enhancement: bool,
-    ) -> List[ClassDefinitionView] | Response:
+        class_filter: list[str]
+    ) -> list[ClassDefinitionView] | Response:
         """desc"""
         try:
             # we should be able to directly get a cursor here based on the schema Id - if not we issue a 404
@@ -109,8 +111,9 @@ class SchemaApi(BaseSchemaApi):
         except InputDataError as ex:
             raise HTTPException(status_code=400, detail="Schema extraction failed due to invalid input data") from ex
 
-        # if entity_filter:
-        #     entities = create_filtered_entity_list(entities, entity_filter, entity_filter_distance)
+
+        if class_filter:
+             schema = create_filtered_class_list(schema, class_filter, 1)
         # # create_nx_graph_from_entity_list(entities)
         # introduce_api_urls_to_entity_list(entities, request, schemaId)
 

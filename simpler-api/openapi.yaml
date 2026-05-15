@@ -743,6 +743,7 @@ paths:
       - $ref: '#/components/parameters/schemaId'
       - $ref: '#/components/parameters/preventStructuralEnhancement'
       - $ref: '#/components/parameters/preventEnhancement'
+      - $ref: '#/components/parameters/classFilter'
       responses:
         "200":
           content:
@@ -1173,6 +1174,19 @@ components:
       schema:
         default: 1
         type: integer
+      style: form
+    classFilter:
+      description: Only include classes of the schema that are in range of the specified
+        classes
+      explode: true
+      in: query
+      name: classFilter
+      required: false
+      schema:
+        default: []
+        items:
+          type: string
+        type: array
       style: form
     entityId:
       description: ID of entity to access

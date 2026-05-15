@@ -775,6 +775,7 @@ paths:
         - $ref: '#/components/parameters/schemaId'
         - $ref: '#/components/parameters/preventStructuralEnhancement'
         - $ref: '#/components/parameters/preventEnhancement'
+        - $ref: '#/components/parameters/classFilter'
         # - $ref: '#/components/parameters/EntityPrefix'
         # - $ref: '#/components/parameters/preventOptimization'
         # - $ref: '#/components/parameters/preventAutomaticOptimization'
@@ -1180,6 +1181,16 @@ components:
       schema:
         type: integer
         default: 1
+      required: false
+    classFilter:
+      name: classFilter
+      in: query
+      description: Only include classes of the schema that are in range of the specified classes
+      schema:
+        type: array
+        items:
+          type: string
+        default: []
       required: false
     entityId:
       name: entityId

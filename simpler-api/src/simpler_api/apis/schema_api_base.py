@@ -34,6 +34,7 @@ class BaseSchemaApi:
         schemaId: str,
         prevent_structural_enhancement: bool,
         prevent_enhancement: bool,
+        class_filter: List[str],
     ) -> List[ClassDefinitionView]:
         """desc"""
         ...

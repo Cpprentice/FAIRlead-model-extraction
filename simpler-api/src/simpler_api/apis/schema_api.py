@@ -70,9 +70,10 @@ async def get_classes_by_schema(
     schemaId: str = Path(..., description="ID of schema to access"),
     prevent_structural_enhancement: bool = Query(False, description="", alias="preventStructuralEnhancement"),
     prevent_enhancement: bool = Query(False, description="", alias="preventEnhancement"),
+    class_filter: List[str] = Query([], description="Only include classes of the schema that are in range of the specified classes", alias="classFilter"),
 ) -> List[ClassDefinitionView]:
     """desc"""
-    return BaseSchemaApi.subclasses[0]().get_classes_by_schema(request, schemaId, prevent_structural_enhancement, prevent_enhancement)
+    return BaseSchemaApi.subclasses[0]().get_classes_by_schema(request, schemaId, prevent_structural_enhancement, prevent_enhancement, class_filter)
 
 
 @router.get(
