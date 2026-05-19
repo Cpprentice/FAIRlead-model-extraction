@@ -8,6 +8,7 @@ from typing import ClassVar, List, Tuple, Type, Dict, Callable, Self, Any
 from linkml_runtime.linkml_model import SchemaDefinition
 from pydantic import BaseModel, Field
 
+from fairlead_core.caching import DiskCache, Pipeline
 from fairlead_core.schema import apply_schema_correction_if_available, optimize_schema, introduce_inverse_relations, \
     get_user_schema_correction, multi_merge, load_schema_enhancement, apply_schema_enhancement
 from fairlead_core.settings import OptimizationSettings
@@ -145,18 +146,40 @@ class DataSourceCursor:
     def load_schema_enhancement(self) -> SchemaEnhancement:
         return load_schema_enhancement(self.plugin.storage, self.name)
 
+    def get_cache(self, reset_depth=0) -> DiskCache:
+        return DiskCache.create_cache(
+            self.plugin.storage.get_file_path(self.name, ''),
+            reset_depth,
+            init_depth=2
+        )
+
     def get_schema(self) -> SchemaDefinition:
-        schema = self.plugin.get_schema(self.name)
-        if not self.settings.prevent_enhancement:
-            schema_enhancement = self.load_schema_enhancement()
-            schema = apply_schema_enhancement(schema, schema_enhancement, self.settings)
+        cache = DiskCache.get_active_cache()
+        pipeline = Pipeline(cache)
 
-            if self.settings.generate_inverse_relations:
-                # TODO introduce_inverse_relations(schema)
-                pass
-        return schema
+        @pipeline.operation([
+            'plugin'
+        ])
+        def get_schema():
+            return self.plugin.get_schema(self.name)
 
-    def get_all_entities(self) -> List[Entity]:
+        @pipeline.operation([
+            self.settings.prevent_enhancement,
+            self.settings.prevent_structural_enhancement
+        ])
+        def apply_enhancement(schema):
+            if not self.settings.prevent_enhancement:
+                schema_enhancement = self.load_schema_enhancement()
+                schema = apply_schema_enhancement(schema, schema_enhancement, self.settings)
+
+                if self.settings.generate_inverse_relations:
+                    # TODO introduce_inverse_relations(schema)
+                    pass
+            return schema
+
+        return pipeline.run()
+
+    def get_all_entities(self) -> list[Entity]:
         entities = self.plugin.get_all_entities(self.name)
         if not self.settings.prevent_optimization:
             if not self.settings.prevent_user_optimization:

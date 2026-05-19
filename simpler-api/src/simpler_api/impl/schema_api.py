@@ -10,6 +10,7 @@ from linkml_runtime import SchemaView
 from linkml_runtime.utils.yamlutils import as_yaml
 from yaml import SafeDumper
 
+from fairlead_core.caching import DiskCache, Pipeline
 from fairlead_core.metadata import convert_schema_to_oemetadata
 from fairlead_core.partitioning import create_filtered_class_list
 from fairlead_core.plugin import InputDataError
@@ -100,46 +101,118 @@ class SchemaApi(BaseSchemaApi):
         class_filter: list[str]
     ) -> list[ClassDefinitionView] | Response:
         """desc"""
+
+        hash_reset_depth = int(request.query_params.get('_hash_reset', 0))
+
         try:
             # we should be able to directly get a cursor here based on the schema Id - if not we issue a 404
             cursor = get_cursor(request, schemaId)
         except:
             raise HTTPException(status_code=404, detail="Schema not found")
 
-        try:
-            schema = cursor.get_schema()
-        except InputDataError as ex:
-            raise HTTPException(status_code=400, detail="Schema extraction failed due to invalid input data") from ex
+        with cursor.get_cache(hash_reset_depth) as cache:
+
+            pipeline = Pipeline(cache)
+
+            @pipeline.operation([
+                prevent_structural_enhancement,
+                prevent_enhancement
+            ])
+            def get_schema():
+                try:
+                    return cursor.get_schema()
+                except InputDataError as ex:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Schema extraction failed due to invalid input data"
+                    ) from ex
+
+            @pipeline.operation([
+                class_filter
+            ])
+            def filter_schema(schema):
+                if class_filter:
+                    return create_filtered_class_list(schema, class_filter, 1)
+                return schema
+
+            @pipeline.operation([
+                request.headers['accept']
+            ])
+            def produce_response(schema):
+                if request.headers['accept'] == 'application/x.linkml+yaml':
+                    def json_obj_representer(dumper: SafeDumper, data: JsonObj):
+                        return dumper.represent_mapping(
+                            "tag:yaml.org,2002:map",
+                            data._as_dict
+                        )
+
+                    yaml.SafeDumper.add_representer(
+                        JsonObj,
+                        json_obj_representer
+                    )
+                    return Response(as_yaml(schema), media_type='application/x.linkml+yaml')
+                elif request.headers['accept'] == 'application/x.oemeta+json':
+                    oemeta_dict = convert_schema_to_oemetadata(schema)
+                    oemeta = json.dumps(oemeta_dict, indent=4)
+                    return Response(oemeta, media_type='application/x.oemeta+json')
+
+                schema_view = SchemaView(schema)
+                view_classes = [
+                    make_class_definition_view(class_def, schema_view)
+                    for class_def in schema.classes.values()
+                ]
+
+                return wrap_response_according_to_accept_header(request, view_classes)
+
+            return pipeline.run()
+
+            # response = cache.get_next([
+            #     schemaId,
+            #     prevent_structural_enhancement,
+            #     prevent_enhancement,
+            #     class_filter,
+            #     request.headers['accept']
+            # ])
+            # if response is not None:
+            #     return response
+            #
+            # filtered_schema = cache.get_next([class_filter])
+            # if filtered_schema is not None:
+
+            try:
+                schema = cursor.get_schema()
+            except InputDataError as ex:
+                raise HTTPException(status_code=400, detail="Schema extraction failed due to invalid input data") from ex
 
 
-        if class_filter:
-             schema = create_filtered_class_list(schema, class_filter, 1)
-        # # create_nx_graph_from_entity_list(entities)
-        # introduce_api_urls_to_entity_list(entities, request, schemaId)
+            if class_filter:
+                 schema = create_filtered_class_list(schema, class_filter, 1)
+            # # create_nx_graph_from_entity_list(entities)
+            # introduce_api_urls_to_entity_list(entities, request, schemaId)
 
 
 
-        if request.headers['accept'] == 'application/x.linkml+yaml':
-            def json_obj_representer(dumper: SafeDumper, data: JsonObj):
-                return dumper.represent_mapping(
-                    "tag:yaml.org,2002:map",
-                    data._as_dict
+            if request.headers['accept'] == 'application/x.linkml+yaml':
+                def json_obj_representer(dumper: SafeDumper, data: JsonObj):
+                    return dumper.represent_mapping(
+                        "tag:yaml.org,2002:map",
+                        data._as_dict
+                    )
+
+                yaml.SafeDumper.add_representer(
+                    JsonObj,
+                    json_obj_representer
                 )
+                return Response(as_yaml(schema), media_type='application/x.linkml+yaml')
+            elif request.headers['accept'] == 'application/x.oemeta+json':
+                oemeta_dict = convert_schema_to_oemetadata(schema)
+                oemeta = json.dumps(oemeta_dict, indent=4)
+                return Response(oemeta, media_type='application/x.oemeta+json')
 
-            yaml.SafeDumper.add_representer(
-                JsonObj,
-                json_obj_representer
-            )
-            return Response(as_yaml(schema), media_type='application/x.linkml+yaml')
-        elif request.headers['accept'] == 'application/x.oemeta+json':
-            oemeta_dict = convert_schema_to_oemetadata(schema)
-            oemeta = json.dumps(oemeta_dict, indent=4)
-            return Response(oemeta, media_type='application/x.oemeta+json')
+            schema_view = SchemaView(schema)
+            view_classes = [
+                make_class_definition_view(class_def, schema_view)
+                for class_def in schema.classes.values()
+            ]
 
-        schema_view = SchemaView(schema)
-        view_classes = [
-            make_class_definition_view(class_def, schema_view)
-            for class_def in schema.classes.values()
-        ]
-
-        return wrap_response_according_to_accept_header(request, view_classes)
+            return wrap_response_according_to_accept_header(request, view_classes)
