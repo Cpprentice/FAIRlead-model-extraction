@@ -109,7 +109,8 @@ dependencies = [
   "networkx~=3.3",
   "owlready2~=0.47",
   "curies~=0.10.10",
-  "jsonpatch-trigger==0.2.0"
+  "jsonpatch-trigger==0.2.0",
+  "linkml-runtime~=1.11.0"
 ]
 
 [project.optional-dependencies]
