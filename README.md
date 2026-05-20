@@ -48,6 +48,8 @@ cd FAIRlead-model-extraction
 git switch develop
 python -m venv .venv   # or use UV if you like
 .\.venv\Scripts\activate  # on bash use source instead
+pip install -e simpler-model
+pip install -e fairlead-core
 pip install -e simpler-api
 ``` 
 

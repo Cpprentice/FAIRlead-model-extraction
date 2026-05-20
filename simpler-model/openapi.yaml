@@ -742,6 +742,8 @@ paths:
       parameters:
       - $ref: '#/components/parameters/schemaId'
       - $ref: '#/components/parameters/preventStructuralEnhancement'
+      - $ref: '#/components/parameters/preventEnhancement'
+      - $ref: '#/components/parameters/classFilter'
       responses:
         "200":
           content:
@@ -949,6 +951,22 @@ paths:
       summary: Get the ERO ontology jsonld context
       tags:
       - semantics
+  /semantics/units:
+    get:
+      description: Fetch all SI units
+      operationId: getUnits
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Unit'
+                type: array
+          description: Unit list
+      summary: Get all QUDT SI Units
+      tags:
+      - semantics
   /semantics/units/search:
     get:
       description: Fetch units based on a query string
@@ -982,9 +1000,46 @@ paths:
           description: Top matches for search string
       summary: Search for QUDT units that match a query
       tags:
-      - units
+      - semantics
+  /semantics/units/match:
+    get:
+      description: Find the best unit of a given set to a set of texts
+      operationId: matchUnits
+      parameters:
+      - explode: true
+        in: query
+        name: unitIris
+        required: true
+        schema:
+          items:
+            type: string
+          type: array
+        style: form
+      - explode: true
+        in: query
+        name: unitTexts
+        required: true
+        schema:
+          items:
+            type: string
+          type: array
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  title: id
+                  type: string
+          description: Match lookup
+      summary: Match a list of units against a list of texts
+      tags:
+      - semantics
   /semantics/quantities/search:
     get:
+      description: Fetch quantity kinds based on a query string
+      operationId: searchQuantityKinds
       parameters:
       - explode: true
         in: query
@@ -1012,6 +1067,9 @@ paths:
                   $ref: '#/components/schemas/Quantity'
                 type: array
           description: Top matches for search string
+      summary: Search for QUDT quantity kinds that match a query
+      tags:
+      - semantics
 components:
   parameters:
     dataSourceId:
@@ -1042,6 +1100,15 @@ components:
       explode: true
       in: query
       name: preventStructuralEnhancement
+      required: false
+      schema:
+        default: false
+        type: boolean
+      style: form
+    preventEnhancement:
+      explode: true
+      in: query
+      name: preventEnhancement
       required: false
       schema:
         default: false
@@ -1107,6 +1174,19 @@ components:
       schema:
         default: 1
         type: integer
+      style: form
+    classFilter:
+      description: Only include classes of the schema that are in range of the specified
+        classes
+      explode: true
+      in: query
+      name: classFilter
+      required: false
+      schema:
+        default: []
+        items:
+          type: string
+        type: array
       style: form
     entityId:
       description: ID of entity to access
