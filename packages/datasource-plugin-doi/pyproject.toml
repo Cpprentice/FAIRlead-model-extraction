@@ -109,7 +109,8 @@ classifiers = [
 # For an analysis of this field vs pip's requirements files see:
 # https://packaging.python.org/discussions/install-requires-vs-requirements/
 dependencies = [
-  "fairlead-core~=0.4.0"
+  "fairlead-core~=0.4.0",
+  "doi-meta-retriever~=0.1.0"
 ]
 
 # List additional groups of dependencies here (e.g. development
@@ -154,5 +155,5 @@ dependencies = [
 # package-data = {"sample" = ["*.dat"]}
 
 [tool.setuptools_scm]
-root = ".."
+root = "../.."
 git_describe_command = "git describe --long --match plugin-doi-*"

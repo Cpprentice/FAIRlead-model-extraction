@@ -107,10 +107,14 @@ dependencies = [
   "pydantic-settings~=2.6.1",
   "PyYAML~=6.0.1",
   "networkx~=3.3",
-  "owlready2~=0.47",
+  "owlready2~=0.50",
   "curies~=0.10.10",
   "jsonpatch-trigger==0.2.0",
-  "linkml-runtime~=1.11.0"
+  "linkml-runtime~=1.11.0",
+  "pydantic-partial~=0.5.5",
+  "Levenshtein~=0.27.3",
+  "xxhash~=3.7.0",
+  "oemetadata~=2.0.4"
 ]
 
 [project.optional-dependencies]

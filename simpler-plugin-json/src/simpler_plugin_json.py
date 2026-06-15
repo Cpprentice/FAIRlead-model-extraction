@@ -5,7 +5,6 @@ import sys
 from pathlib import Path
 from typing import List, Dict, Any
 
-from astroid import ClassDef
 from datamodel_code_generator import generate, InputFileType, DataModelType, PythonVersion, load_yaml
 from datamodel_code_generator.model import get_data_model_types, DataModel
 from datamodel_code_generator.model.pydantic_v2 import RootModel

@@ -5,4 +5,4 @@ set dt=%dt: =0%
 
 REM echo %dt%
 
-docker build -f %~dp0\Dockerfile-API -t simpler-api:%dt% %~dp0
+docker build --progress=plain -f %~dp0\Dockerfile-API -t simpler-api:%dt% %~dp0

@@ -2,22 +2,47 @@ FROM python:3.12 as dev
 
 WORKDIR /app
 
-COPY fairlead-core/ /app/fairlead_core
-COPY simpler-api /app/simpler_api
-COPY simpler-model /app/simpler_model
-# COPY simpler-plugin-tabular /app/simpler_plugin_tabular
-COPY simpler-plugin-rdf /app/simpler_plugin_rdf
-COPY simpler-plugin-sql /app/simpler_plugin_sql
-COPY simpler-plugin-xml /app/simpler_plugin_xml
+# We need this for setuptools-scm to work properly
+COPY .git /app/.git
 
-RUN pip wheel --no-deps -w /app/wheels /app/simpler_model
-RUN pip wheel --no-deps -w /app/wheels /app/fairlead_core
-RUN pip wheel --no-deps -w /app/wheels /app/simpler_api
+COPY fairlead-core/ /app/fairlead-core
+COPY simpler-api /app/simpler-api
+COPY simpler-model /app/simpler-model
 
-# RUN pip wheel --no-deps -w /app/wheels /app/simpler_plugin_tabular
-RUN pip wheel --no-deps -w /app/wheels /app/simpler_plugin_rdf
-RUN pip wheel --no-deps -w /app/wheels /app/simpler_plugin_sql
-RUN pip wheel --no-deps -w /app/wheels /app/simpler_plugin_xml
+COPY packages/ /app/packages
+
+COPY simpler-plugin-api /app/simpler-plugin-api
+COPY simpler-plugin-influx /app/simpler-plugin-influx
+COPY simpler-plugin-json /app/simpler-plugin-json
+COPY simpler-plugin-rdf /app/simpler-plugin-rdf
+COPY simpler-plugin-sql /app/simpler-plugin-sql
+COPY simpler-plugin-xml /app/simpler-plugin-xml
+COPY simpler-plugin-tabular /app/simpler-plugin-tabular
+
+COPY datasource-plugin-linkml /app/datasource-plugin-linkml
+COPY datasource-plugin-oedb /app/datasource-plugin-oedb
+
+
+RUN pip wheel --no-deps -w /app/wheels /app/simpler-model
+RUN pip wheel --no-deps -w /app/wheels /app/fairlead-core
+RUN pip wheel --no-deps -w /app/wheels /app/simpler-api
+
+RUN pip wheel --no-deps -w /app/wheels /app/packages/datasource-plugin-doi
+RUN pip wheel --no-deps -w /app/wheels /app/datasource-plugin-linkml
+RUN pip wheel --no-deps -w /app/wheels /app/datasource-plugin-oedb
+RUN pip wheel --no-deps -w /app/wheels /app/simpler-plugin-api
+RUN pip wheel --no-deps -w /app/wheels /app/simpler-plugin-influx
+RUN pip wheel --no-deps -w /app/wheels /app/simpler-plugin-json
+RUN pip wheel --no-deps -w /app/wheels /app/simpler-plugin-rdf
+RUN pip wheel --no-deps -w /app/wheels /app/simpler-plugin-sql
+RUN pip wheel --no-deps -w /app/wheels /app/simpler-plugin-tabular
+RUN pip wheel --no-deps -w /app/wheels /app/simpler-plugin-xml
+
+
+
+RUN echo "=== Listing /app/wheels ===" && ls -lah /app/wheels && echo "=== End Wheel List ==="
+
+
 
 FROM python:3.12
 
@@ -26,18 +51,32 @@ WORKDIR /app
 COPY --from=dev /app/wheels /app/wheels
 
 # This should find the necessary other modules from the wheel dir
-RUN pip install --find-links /app/wheels simpler_api
+RUN pip install --pre --find-links /app/wheels simpler-api
 
 # We need to perform a hotfix for owlready2 here
-RUN sed -i.bak -E "s/(else: +name = )storid/\1str\(storid\)/g" /usr/local/lib/python3.12/site-packages/owlready2/namespace.py
+# this should have been fixed with the new version after my bug report was fixed
+# RUN sed -i.bak -E "s/(else: +name = )storid/\1str\(storid\)/g" /usr/local/lib/python3.12/site-packages/owlready2/namespace.py
 
-# RUN pip install --find-links /app/wheels simpler_plugin_tabular
-RUN pip install --find-links /app/wheels simpler_plugin_rdf
-RUN pip install --find-links /app/wheels simpler_plugin_sql
-RUN pip install --find-links /app/wheels simpler_plugin_xml
+
+RUN pip install --pre --find-links /app/wheels fairlead-datasource-plugin-doi
+RUN pip install --pre --find-links /app/wheels fairlead-datasource-plugin-linkml
+RUN pip install --pre --find-links /app/wheels fairlead-datasource-plugin-oedb
+RUN pip install --pre --find-links /app/wheels simpler-plugin-api
+RUN pip install --pre --find-links /app/wheels simpler-plugin-influx
+RUN pip install --pre --find-links /app/wheels simpler-plugin-json
+RUN pip install --pre --find-links /app/wheels simpler-plugin-rdf
+RUN pip install --pre --find-links /app/wheels simpler-plugin-sql
+RUN pip install --pre --find-links /app/wheels simpler-plugin-tabular
+RUN pip install --pre --find-links /app/wheels simpler-plugin-xml
 
 RUN pip install uvicorn
 RUN apt-get update
 RUN apt-get install -y graphviz
+
+COPY simpler-api/static /app/simpler-api/static
+
+# Perform test to import all needed modules
+RUN pip list
+RUN python -m simpler_api.main
 
 ENTRYPOINT ["uvicorn", "simpler_api.main:app", "--host", "0.0.0.0", "--port", "7373"]
