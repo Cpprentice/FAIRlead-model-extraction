@@ -1,8 +1,4 @@
-import collections
-import contextlib
 import csv
-import functools
-import io
 import json
 import re
 import zipfile
@@ -10,12 +6,12 @@ import zlib
 from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import List, Callable, Dict, Iterable, TextIO, Any, Sequence, ClassVar, Self
+from typing import List, Callable, Dict, Iterable, TextIO, Any, ClassVar
 from zipfile import ZipFile
 
 from linkml_runtime.linkml_model import SchemaDefinition, ClassDefinition, SlotDefinition
 from linkml_runtime.utils.schema_builder import SchemaBuilder
-from openpyxl import Workbook, load_workbook
+from openpyxl import load_workbook
 import pandas as pd
 import yaml
 from openpyxl.cell import Cell
@@ -23,11 +19,10 @@ from openpyxl.worksheet.table import Table
 from openpyxl.worksheet.worksheet import Worksheet
 import pyarrow.parquet
 
-from fairlead_core.plugin import DataSourcePlugin, DataSourceType, EntityLink, InputFlag
-from fairlead_core.schema import load_external_schema_from_yaml
+from fairlead_core.plugin import DataSourcePlugin, DataSourceType, InputFlag
 from fairlead_core.performance import profile
 from fairlead_core.storage import ManualFilesystemDataSourceStorage
-from simpler_model import Entity, Relation, Attribute
+from simpler_model import Entity, Attribute
 from simpler_plugin_json import JSONDataSourcePlugin
 
 
