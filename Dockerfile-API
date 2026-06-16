@@ -11,7 +11,6 @@ COPY simpler-model /app/simpler-model
 
 COPY packages/ /app/packages
 
-COPY simpler-plugin-api /app/simpler-plugin-api
 COPY simpler-plugin-influx /app/simpler-plugin-influx
 COPY simpler-plugin-json /app/simpler-plugin-json
 COPY simpler-plugin-rdf /app/simpler-plugin-rdf
@@ -27,7 +26,7 @@ RUN pip wheel --no-deps -w /app/wheels /app/simpler-api
 RUN pip wheel --no-deps -w /app/wheels /app/packages/datasource-plugin-doi
 RUN pip wheel --no-deps -w /app/wheels /app/packages/datasource-plugin-linkml
 RUN pip wheel --no-deps -w /app/wheels /app/packages/datasource-plugin-oedb
-RUN pip wheel --no-deps -w /app/wheels /app/simpler-plugin-api
+RUN pip wheel --no-deps -w /app/wheels /app/packages/simpler-plugin-api
 RUN pip wheel --no-deps -w /app/wheels /app/simpler-plugin-influx
 RUN pip wheel --no-deps -w /app/wheels /app/simpler-plugin-json
 RUN pip wheel --no-deps -w /app/wheels /app/simpler-plugin-rdf
