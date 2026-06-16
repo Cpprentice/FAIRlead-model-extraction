@@ -11,7 +11,6 @@ COPY simpler-model /app/simpler-model
 
 COPY packages/ /app/packages
 
-COPY simpler-plugin-sql /app/simpler-plugin-sql
 COPY simpler-plugin-xml /app/simpler-plugin-xml
 COPY simpler-plugin-tabular /app/simpler-plugin-tabular
 
@@ -27,7 +26,7 @@ RUN pip wheel --no-deps -w /app/wheels /app/packages/simpler-plugin-api
 RUN pip wheel --no-deps -w /app/wheels /app/packages/simpler-plugin-influx
 RUN pip wheel --no-deps -w /app/wheels /app/packages/simpler-plugin-json
 RUN pip wheel --no-deps -w /app/wheels /app/packages/simpler-plugin-rdf
-RUN pip wheel --no-deps -w /app/wheels /app/simpler-plugin-sql
+RUN pip wheel --no-deps -w /app/wheels /app/packages/simpler-plugin-sql
 RUN pip wheel --no-deps -w /app/wheels /app/simpler-plugin-tabular
 RUN pip wheel --no-deps -w /app/wheels /app/simpler-plugin-xml
 
