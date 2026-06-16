@@ -158,5 +158,5 @@ dependencies = [
 # package-data = {"sample" = ["*.dat"]}
 
 [tool.setuptools_scm]
-root = ".."
+root = "../.."
 git_describe_command = "git describe --long --match plugin-tabular-*"

@@ -5,7 +5,7 @@ WORKDIR /app
 COPY fairlead-core/ /app/fairlead_core
 COPY simpler-cli /app/simpler_cli
 COPY simpler-model-3_1 /app/simpler_model
-COPY simpler-plugin-tabular /app/simpler_plugin_tabular
+COPY packages/simpler-plugin-tabular /app/simpler_plugin_tabular
 
 RUN pip wheel --no-deps -w /app/wheels /app/simpler_model
 RUN pip wheel --no-deps -w /app/wheels /app/fairlead_core
