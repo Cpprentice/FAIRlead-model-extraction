@@ -19,7 +19,6 @@ COPY simpler-plugin-sql /app/simpler-plugin-sql
 COPY simpler-plugin-xml /app/simpler-plugin-xml
 COPY simpler-plugin-tabular /app/simpler-plugin-tabular
 
-COPY datasource-plugin-linkml /app/datasource-plugin-linkml
 COPY datasource-plugin-oedb /app/datasource-plugin-oedb
 
 
@@ -28,7 +27,7 @@ RUN pip wheel --no-deps -w /app/wheels /app/fairlead-core
 RUN pip wheel --no-deps -w /app/wheels /app/simpler-api
 
 RUN pip wheel --no-deps -w /app/wheels /app/packages/datasource-plugin-doi
-RUN pip wheel --no-deps -w /app/wheels /app/datasource-plugin-linkml
+RUN pip wheel --no-deps -w /app/wheels /app/packages/datasource-plugin-linkml
 RUN pip wheel --no-deps -w /app/wheels /app/datasource-plugin-oedb
 RUN pip wheel --no-deps -w /app/wheels /app/simpler-plugin-api
 RUN pip wheel --no-deps -w /app/wheels /app/simpler-plugin-influx
