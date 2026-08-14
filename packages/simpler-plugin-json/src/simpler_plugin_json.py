@@ -63,6 +63,7 @@ class JSONDataSourcePlugin(DataSourcePlugin):
 
             relation_names = []
             attributes = []
+            slot_usage = {}
 
             if not isinstance(model, RootModel):
                 for rank, field in enumerate(model.fields):
@@ -98,19 +99,28 @@ class JSONDataSourcePlugin(DataSourcePlugin):
                         object_cardinality = (object_cardinality_min, object_cardinality_max)
 
                         target_path, = field.unresolved_types
-                        builder.add_slot(SlotDefinition(
+                        if builder.schema.slots.get(field.name, None) is None:
+                            builder.add_slot(SlotDefinition(
+                                name=field.name,
+                                # multivalued=is_collection,
+                                # range=target_name_lookup[target_path],
+                                # required=object_cardinality_min > 0,
+                                # rank=rank
+                            ))
+                        slot_usage[field.name] = SlotDefinition(
                             name=field.name,
                             multivalued=is_collection,
                             range=target_name_lookup[target_path],
                             required=object_cardinality_min > 0,
                             rank=rank
-                        ))
+                        )
                         relation_names.append(field.name)
 
             builder.add_class(ClassDefinition(
                 name=model.class_name,
                 attributes=attributes,
-                slots=relation_names
+                slots=relation_names,
+                slot_usage=slot_usage
             ))
         return builder.schema
 
