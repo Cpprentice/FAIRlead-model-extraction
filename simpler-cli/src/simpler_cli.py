@@ -128,50 +128,51 @@ def extract_command(args: Namespace, parser: ArgumentParser):
         generate_inverse_relations=args.generate_inverse_relations
     )
     cursor: DataSourceCursor = plugin.get_cursor('cli', optimization_settings)
+    with cursor.get_cache(1000) as cache:  # This means for now no cashing in CLI
 
-    if args.linkml:
-        schema = cursor.get_schema()
-        schema_enhancement = load_schema_enhancement(cursor.plugin.storage, 'cli')
-        schema = apply_schema_enhancement(schema, schema_enhancement, optimization_settings)
+        if args.linkml:
+            schema = cursor.get_schema()
+            schema_enhancement = load_schema_enhancement(cursor.plugin.storage, 'cli')
+            schema = apply_schema_enhancement(schema, schema_enhancement, optimization_settings)
 
-        def json_obj_representer(dumper: SafeDumper, data: JsonObj):
-            return dumper.represent_mapping(
-                "tag:yaml.org,2002:map",
-                data._as_dict
+            def json_obj_representer(dumper: SafeDumper, data: JsonObj):
+                return dumper.represent_mapping(
+                    "tag:yaml.org,2002:map",
+                    data._as_dict
+                )
+
+            yaml.SafeDumper.add_representer(
+                JsonObj,
+                json_obj_representer
             )
 
-        yaml.SafeDumper.add_representer(
-            JsonObj,
-            json_obj_representer
-        )
-
-        schema_yaml = as_yaml(schema)
-        if args.output is not None:
-            with open(args.output, 'w') as stream:
-                stream.write(schema_yaml)
+            schema_yaml = as_yaml(schema)
+            if args.output is not None:
+                with open(args.output, 'w') as stream:
+                    stream.write(schema_yaml)
+            else:
+                print(schema_yaml)
         else:
-            print(schema_yaml)
-    else:
-        entities = cursor.get_all_entities()
+            entities = cursor.get_all_entities()
 
-        output_string = ''
+            output_string = ''
 
-        if args.format == 'DOT':
-            dot = create_graph(entities, show_attributes=not args.hide_arguments)
-            if args.select_entity:
-                dot = filter_graph(dot, args.select_entity, args.distance)
-            output_string = str(dot)
-        elif args.format == 'JSON':
-            dicts = [m.dict() for m in entities]
-            output_string = json.dumps(dicts, indent=4)
-        elif args.format == 'YAML':
-            output_string = serialize_entity_list_to_yaml(entities)
+            if args.format == 'DOT':
+                dot = create_graph(entities, show_attributes=not args.hide_arguments)
+                if args.select_entity:
+                    dot = filter_graph(dot, args.select_entity, args.distance)
+                output_string = str(dot)
+            elif args.format == 'JSON':
+                dicts = [m.dict() for m in entities]
+                output_string = json.dumps(dicts, indent=4)
+            elif args.format == 'YAML':
+                output_string = serialize_entity_list_to_yaml(entities)
 
-        if args.output is not None:
-            with open(args.output, 'w') as stream:
-                stream.write(output_string)
-        else:
-            print(output_string)
+            if args.output is not None:
+                with open(args.output, 'w') as stream:
+                    stream.write(output_string)
+            else:
+                print(output_string)
 
 
 @command('dot')

@@ -2,16 +2,33 @@ FROM python:3.12 as dev
 
 WORKDIR /app
 
-COPY fairlead-core/ /app/fairlead_core
-COPY simpler-cli /app/simpler_cli
-COPY simpler-model-3_1 /app/simpler_model
-COPY packages/simpler-plugin-tabular /app/simpler_plugin_tabular
+# We need this for setuptools-scm to work properly
+COPY .git /app/.git
 
-RUN pip wheel --no-deps -w /app/wheels /app/simpler_model
-RUN pip wheel --no-deps -w /app/wheels /app/fairlead_core
-RUN pip wheel --no-deps -w /app/wheels /app/simpler_cli
+COPY fairlead-core/ /app/fairlead-core
+COPY simpler-cli /app/simpler-cli
+COPY simpler-model /app/simpler-model
 
-RUN pip wheel --no-deps -w /app/wheels /app/simpler_plugin_tabular
+COPY packages/ /app/packages
+
+RUN pip wheel --no-deps -w /app/wheels /app/simpler-model
+RUN pip wheel --no-deps -w /app/wheels /app/fairlead-core
+RUN pip wheel --no-deps -w /app/wheels /app/simpler-cli
+
+RUN pip wheel --no-deps -w /app/wheels /app/packages/datasource-plugin-doi
+RUN pip wheel --no-deps -w /app/wheels /app/packages/datasource-plugin-linkml
+RUN pip wheel --no-deps -w /app/wheels /app/packages/datasource-plugin-oedb
+RUN pip wheel --no-deps -w /app/wheels /app/packages/simpler-plugin-api
+RUN pip wheel --no-deps -w /app/wheels /app/packages/simpler-plugin-influx
+RUN pip wheel --no-deps -w /app/wheels /app/packages/simpler-plugin-json
+RUN pip wheel --no-deps -w /app/wheels /app/packages/simpler-plugin-rdf
+RUN pip wheel --no-deps -w /app/wheels /app/packages/simpler-plugin-sql
+RUN pip wheel --no-deps -w /app/wheels /app/packages/simpler-plugin-tabular
+RUN pip wheel --no-deps -w /app/wheels /app/packages/simpler-plugin-xml
+
+
+
+RUN echo "=== Listing /app/wheels ===" && ls -lah /app/wheels && echo "=== End Wheel List ==="
 
 FROM python:3.12
 
@@ -22,8 +39,19 @@ COPY --from=dev /app/wheels /app/wheels
 # This should find the necessary other modules from the wheel dir
 RUN pip install --find-links /app/wheels simpler_cli
 
-RUN pip install --find-links /app/wheels simpler_plugin_tabular
+RUN pip install --pre --find-links /app/wheels fairlead-datasource-plugin-doi
+RUN pip install --pre --find-links /app/wheels fairlead-datasource-plugin-linkml
+RUN pip install --pre --find-links /app/wheels fairlead-datasource-plugin-oedb
+RUN pip install --pre --find-links /app/wheels simpler-plugin-api
+RUN pip install --pre --find-links /app/wheels simpler-plugin-influx
+RUN pip install --pre --find-links /app/wheels simpler-plugin-json
+RUN pip install --pre --find-links /app/wheels simpler-plugin-rdf
+RUN pip install --pre --find-links /app/wheels simpler-plugin-sql
+RUN pip install --pre --find-links /app/wheels simpler-plugin-tabular
+RUN pip install --pre --find-links /app/wheels simpler-plugin-xml
+
 RUN apt-get update
 RUN apt-get install -y graphviz
 
 ENTRYPOINT ["python", "-m", "simpler_cli"]
+
