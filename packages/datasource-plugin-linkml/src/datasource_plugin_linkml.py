@@ -89,7 +89,7 @@ class LinkmlDataSourcePlugin(DataSourcePlugin):
 
             attributes = []
             relations = []
-            for slot in class_.slots:
+            for slot in schema_view.class_induced_slots(class_id):
                 ranged_items = [slot]
                 if slot.any_of is not None and len(slot.any_of) > 0:
                     ranged_items = slot.any_of
@@ -110,7 +110,7 @@ class LinkmlDataSourcePlugin(DataSourcePlugin):
                         #  the same name and different range
                         relations.append(Relation(
                             relation_name=[slot.name],
-                            has_subject_entity=slot.domain,
+                            has_subject_entity=class_id,
                             has_object_entity=ranged_item.range,
                             has_relation_modifier=None,
                             subject_cardinality=create_cardinality((1, 1)),
