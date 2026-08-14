@@ -3,6 +3,7 @@ import collections
 import functools
 import itertools
 import json
+import re
 import sys
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
@@ -150,6 +151,15 @@ order by kcu.table_schema,
          kcu.table_name,
          kcu.ordinal_position;
 """)
+
+
+def to_snake_case(s: str) -> str:
+    words = re.split(r'\s+', s.strip())
+    return '_'.join(word.lower() for word in words if word)
+
+def to_camel_case(s: str) -> str:
+    words = re.split(r'\s+', s.strip())
+    return ''.join(word.capitalize() for word in words if word)
 
 
 class SqlDataSourceType(DataSourceType):
@@ -315,7 +325,7 @@ class BaseSqlDataSourcePlugin(DataSourcePlugin):
             for rank, column in enumerate(table.columns):
                 attribute_lookup[column.table.name].append(SlotDefinition(
                     name=column.name,
-                    key=column.primary_key or (not column.nullable and column.unique) or
+                    identifier=column.primary_key or (not column.nullable and column.unique) or
                         column.index is not None or table_index_lookup[column.name] or None,
                     required=not column.nullable,
                     range=column.type,
@@ -353,6 +363,7 @@ class BaseSqlDataSourcePlugin(DataSourcePlugin):
 
     def get_schema(self, name: str) -> SchemaDefinition:
         builder = SchemaBuilder(name)
+        builder.add_defaults()
         metadata = self.get_metadata(name)
         with (self.get_sql_cursor(name) as cursor):
 
@@ -401,6 +412,11 @@ class BaseSqlDataSourcePlugin(DataSourcePlugin):
                 relation_slot_names = []
 
                 for foreign_key in foreign_key_objects:
+                    slot_name = to_snake_case(foreign_key.constraint_name)
+                    alias = None
+                    if slot_name != foreign_key.constraint_name:
+                        alias = foreign_key.constraint_name
+
                     # if foreign_key.primary_table == table_name:
                     if foreign_key.foreign_table == table_name:
                         # fk_short_name = foreign_key.foreign_table.replace('public.', '')
@@ -415,14 +431,15 @@ class BaseSqlDataSourcePlugin(DataSourcePlugin):
                                     cardinality_implications[(foreign_key.primary_table, table_name)])
 
                             builder.add_slot(SlotDefinition(
-                                name=foreign_key.constraint_name,
+                                name=slot_name,
+                                alias=alias,
                                 range=fk_short_name,
                                 domain=short_name,
                                 required=not foreign_key.nullable,
                                 # TODO think about something for an identifying relation
-                                identifier=foreign_key in filtered_foreign_key_objects or None
+                                # identifier=foreign_key in filtered_foreign_key_objects or None
                             ))
-                            relation_slot_names.append(foreign_key.constraint_name)
+                            relation_slot_names.append(slot_name)
                             # relations.append(
                             #     Relation(
                             #         relation_name=[foreign_key.constraint_name],
