@@ -25,6 +25,7 @@ from fastapi import (  # noqa: F401
 from simpler_api.models.extra_models import TokenModel  # noqa: F401
 from simpler_api.models.class_definition_view import ClassDefinitionView
 from simpler_api.models.model_schema import ModelSchema
+from simpler_api.models.slot_definition_view import SlotDefinitionView
 
 
 router = APIRouter()
@@ -121,3 +122,24 @@ async def get_schema_diagram(
 ) -> str:
     """desc"""
     return BaseSchemaApi.subclasses[0]().get_schema_diagram(request, schemaId, show_attributes, selected_entities, render_distance, prevent_optimization, prevent_automatic_optimization, prevent_user_optimization, generate_inverse_relations)
+
+
+@router.get(
+    "/schemata/{schemaId}/classes/{classId}/slots",
+    responses={
+        200: {"model": List[SlotDefinitionView], "description": "successful operation"},
+    },
+    tags=["schema"],
+    summary="get all slots of a class",
+    response_model_by_alias=True,
+)
+async def get_slots_by_schema_and_class(
+    request: Request,
+    schemaId: str = Path(..., description="ID of schema to access"),
+    classId: str = Path(..., description="ID of a class to access"),
+    prevent_structural_enhancement: bool = Query(False, description="", alias="preventStructuralEnhancement"),
+    prevent_enhancement: bool = Query(False, description="", alias="preventEnhancement"),
+    class_filter: List[str] = Query([], description="Only include classes of the schema that are in range of the specified classes", alias="classFilter"),
+) -> List[SlotDefinitionView]:
+    """desc"""
+    return BaseSchemaApi.subclasses[0]().get_slots_by_schema_and_class(request, schemaId, classId, prevent_structural_enhancement, prevent_enhancement, class_filter)

@@ -768,6 +768,40 @@ paths:
       summary: get all classes of a schema
       tags:
       - schema
+  /schemata/{schemaId}/classes/{classId}/slots:
+    get:
+      description: desc
+      operationId: getSlotsBySchemaAndClass
+      parameters:
+      - $ref: '#/components/parameters/schemaId'
+      - $ref: '#/components/parameters/classId'
+      - $ref: '#/components/parameters/preventStructuralEnhancement'
+      - $ref: '#/components/parameters/preventEnhancement'
+      - $ref: '#/components/parameters/classFilter'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/SlotDefinitionView'
+                type: array
+            application/xml:
+              schema:
+                items:
+                  $ref: '#/components/schemas/SlotDefinitionView'
+                type: array
+                xml:
+                  name: entities
+            application/x-yaml:
+              schema:
+                items:
+                  $ref: '#/components/schemas/SlotDefinitionView'
+                type: array
+          description: successful operation
+      summary: get all slots of a class
+      tags:
+      - schema
   /schemata/{schemaId}/entities:
     get:
       description: desc
@@ -1202,6 +1236,15 @@ components:
       explode: false
       in: path
       name: schemaId
+      required: true
+      schema:
+        type: string
+      style: simple
+    classId:
+      description: ID of a class to access
+      explode: false
+      in: path
+      name: classId
       required: true
       schema:
         type: string

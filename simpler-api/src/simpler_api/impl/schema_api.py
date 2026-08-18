@@ -7,14 +7,15 @@ from fastapi import HTTPException, Request, Response, Query
 import pydot
 from jsonasobj2 import JsonObj
 from linkml_runtime import SchemaView
+from linkml_runtime.linkml_model import SchemaDefinition, ClassDefinition, SlotDefinition
 from linkml_runtime.utils.yamlutils import as_yaml
 from yaml import SafeDumper
 
 from fairlead_core.caching import DiskCache, Pipeline
 from fairlead_core.metadata import convert_schema_to_oemetadata
 from fairlead_core.partitioning import create_filtered_class_list
-from fairlead_core.plugin import InputDataError
-from simpler_api.impl.mapping import make_class_definition_view
+from fairlead_core.plugin import InputDataError, DataSourceCursor
+from simpler_api.impl.mapping import make_class_definition_view, make_slot_definition_view
 from simpler_api.impl.plugins import get_cursor
 from simpler_api.apis.schema_api_base import BaseSchemaApi
 from simpler_api.impl.response import wrap_response_according_to_accept_header
@@ -23,7 +24,7 @@ from simpler_api.models.model_schema import ModelSchema
 from fairlead_core.dot import create_graph, filter_graph
 from fairlead_core.schema import apply_schema_correction_if_available, introduce_inverse_relations, \
     apply_schema_enhancement, load_schema_enhancement
-from simpler_model import ClassDefinitionView
+from simpler_model import ClassDefinitionView, SlotDefinitionView
 
 
 class SchemaApi(BaseSchemaApi):
@@ -92,6 +93,49 @@ class SchemaApi(BaseSchemaApi):
             return Response(graph.create(prog=['dot', '-Kfdp'], format='svg'), media_type='image/svg+xml')
         return Response(graph.to_string(), media_type='text/plain')
 
+    @staticmethod
+    def _get_filtered_schema(
+            pipeline: Pipeline,
+            cursor: DataSourceCursor,
+            prevent_structural_enhancement: bool,
+            prevent_enhancement: bool,
+            class_filter: list[str]
+    ):
+        @pipeline.operation([
+            prevent_structural_enhancement,
+            prevent_enhancement
+        ])
+        def get_schema():
+            try:
+                return cursor.get_schema()
+            except InputDataError as ex:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Schema extraction failed due to invalid input data"
+                ) from ex
+
+        @pipeline.operation([
+            class_filter
+        ])
+        def filter_schema(schema):
+            if class_filter:
+                return create_filtered_class_list(schema, class_filter, 1)
+            return schema
+
+    @staticmethod
+    def _patch_yaml_serializer():
+        def json_obj_representer(dumper: SafeDumper, data: JsonObj):
+            return dumper.represent_mapping(
+                "tag:yaml.org,2002:map",
+                data._as_dict
+            )
+
+        # TODO check we dont have this representer added a million times
+        yaml.SafeDumper.add_representer(
+            JsonObj,
+            json_obj_representer
+        )
+
     def get_classes_by_schema(
         self,
         request: Request,
@@ -113,43 +157,14 @@ class SchemaApi(BaseSchemaApi):
         with cursor.get_cache(hash_reset_depth) as cache:
 
             pipeline = Pipeline(cache)
-
-            @pipeline.operation([
-                prevent_structural_enhancement,
-                prevent_enhancement
-            ])
-            def get_schema():
-                try:
-                    return cursor.get_schema()
-                except InputDataError as ex:
-                    raise HTTPException(
-                        status_code=400,
-                        detail="Schema extraction failed due to invalid input data"
-                    ) from ex
-
-            @pipeline.operation([
-                class_filter
-            ])
-            def filter_schema(schema):
-                if class_filter:
-                    return create_filtered_class_list(schema, class_filter, 1)
-                return schema
+            self._get_filtered_schema(pipeline, cursor, prevent_structural_enhancement, prevent_enhancement, class_filter)
 
             @pipeline.operation([
                 request.headers['accept']
             ])
             def produce_response(schema):
                 if request.headers['accept'] == 'application/x.linkml+yaml':
-                    def json_obj_representer(dumper: SafeDumper, data: JsonObj):
-                        return dumper.represent_mapping(
-                            "tag:yaml.org,2002:map",
-                            data._as_dict
-                        )
-
-                    yaml.SafeDumper.add_representer(
-                        JsonObj,
-                        json_obj_representer
-                    )
+                    self._patch_yaml_serializer()
                     return Response(as_yaml(schema), media_type='application/x.linkml+yaml')
                 elif request.headers['accept'] == 'application/x.oemeta+json':
                     oemeta_dict = convert_schema_to_oemetadata(schema)
@@ -216,3 +231,46 @@ class SchemaApi(BaseSchemaApi):
             ]
 
             return wrap_response_according_to_accept_header(request, view_classes)
+    def get_slots_by_schema_and_class(
+        self,
+        request: Request,
+        schemaId: str,
+        classId: str,
+        prevent_structural_enhancement: bool,
+        prevent_enhancement: bool,
+        class_filter: List[str],
+    ) -> List[SlotDefinitionView]:
+
+        hash_reset_depth = int(request.query_params.get('_hash_reset', 0))
+        try:
+            # we should be able to directly get a cursor here based on the schema Id - if not we issue a 404
+            cursor = get_cursor(request, schemaId)
+        except:
+            raise HTTPException(status_code=404, detail="Schema not found")
+
+        with cursor.get_cache(hash_reset_depth) as cache:
+
+            pipeline = Pipeline(cache)
+            self._get_filtered_schema(pipeline, cursor, prevent_structural_enhancement, prevent_enhancement,
+                                      class_filter)
+
+            @pipeline.operation([classId])
+            def pick_class_and_extract_slots(filtered_schema: SchemaDefinition) -> list[SlotDefinition]:
+                view = SchemaView(filtered_schema)
+                class_ = view.get_class(classId)
+                if class_ is None:
+                    raise HTTPException(status_code=404, detail="Class not found")
+
+                slots = view.class_induced_slots(class_.name)
+                return slots
+
+            @pipeline.operation([request.headers['accept']])
+            def serialize_slots(slot_list: list[SlotDefinition]):
+                slot_views = [
+                    make_slot_definition_view(slot_def, None)
+                    for slot_def in slot_list
+                ]
+
+                return wrap_response_according_to_accept_header(request, slot_views)
+
+            return pipeline.run()

@@ -5,6 +5,7 @@ from fastapi import Request
 
 from simpler_api.models.class_definition_view import ClassDefinitionView
 from simpler_api.models.model_schema import ModelSchema
+from simpler_api.models.slot_definition_view import SlotDefinitionView
 
 
 file = bytes
@@ -65,5 +66,18 @@ class BaseSchemaApi:
         prevent_user_optimization: bool,
         generate_inverse_relations: bool,
     ) -> str:
+        """desc"""
+        ...
+
+
+    def get_slots_by_schema_and_class(
+        self,
+        request: Request,
+        schemaId: str,
+        classId: str,
+        prevent_structural_enhancement: bool,
+        prevent_enhancement: bool,
+        class_filter: List[str],
+    ) -> List[SlotDefinitionView]:
         """desc"""
         ...

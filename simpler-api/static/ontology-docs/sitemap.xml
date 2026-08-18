@@ -2,190 +2,190 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/Attribute/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/AttributeModifier/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/Boolean/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/Cardinality/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/Curie/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/Date/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/DateOrDatetime/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/Datetime/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/Decimal/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/Double/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/Entity/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/EntityContainer/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/EntityModifier/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/Float/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/Integer/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/Jsonpath/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/Jsonpointer/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/Modifier/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/Ncname/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/Nodeidentifier/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/Objectidentifier/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/Relation/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/RelationModifier/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/Sparqlpath/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/String/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/Time/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/Uri/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/Uriorcurie/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/attributeName/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/entities/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/entityName/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/entityUrl/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/hasAttribute/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/hasAttributeModifier/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/hasEntityModifier/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/hasModifier/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/hasObjectEntity/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/hasRelationModifier/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/hasSubjectEntity/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/inverseRelation/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/isAttributeOf/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/isObjectInRelation/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/isSubjectInRelation/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/objectCardinality/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/relationName/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://localhost:7373/semantics/ontology/docs/subjectCardinality/</loc>
-         <lastmod>2026-05-11</lastmod>
+         <lastmod>2026-08-18</lastmod>
     </url>
 </urlset>
