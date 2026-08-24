@@ -832,7 +832,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/SlotDefinitionView'
                 xml:
-                  name: entities
+                  name: slots
             application/x-yaml:
               schema:
                 type: array

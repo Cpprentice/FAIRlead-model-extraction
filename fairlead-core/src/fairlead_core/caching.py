@@ -50,7 +50,8 @@ class DiskCache:
         value = self.shelf.get(key, None)
         if self.reset_depth > 0:
             self.reset_depth -= 1
-            del self.shelf[key]  # make sure the cache item is gone for following runs
+            if key in self.shelf:
+                del self.shelf[key]  # make sure the cache item is gone for following runs
             value = None
         # self.current_depth = max(self.current_depth - 1, 0)
         if value is None:
@@ -96,33 +97,51 @@ class DiskCache:
 
 
 class PipelineStage:
-    def __init__(self, cache: DiskCache, args: list, func: Callable):
+    def __init__(self, cache: DiskCache, previous_args: list, local_args: list, func: Callable, kwargs: dict):
         self.cache = cache
         # self.result = None
-        self.args = args
+        self.local_args = local_args
+        self.previous_args = previous_args
         self.func = func
+        self.kwargs = kwargs
+
+    @property
+    def args(self):
+        return self.previous_args + self.local_args
 
     def __call__(self, *args):
-        return self.func(*args)
+        return self.func(*args, **self.kwargs)
         # if self.result is not None:
         #     self.cache.store(self.result, self.args)
 
 
 class Pipeline:
-    def __init__(self, cache: DiskCache):
+    def __init__(self, cache: DiskCache, first_stage_input: Any = None):
         self.cache = cache
         self.ops = []
+        self.first_stage_input = first_stage_input
 
     def operation(self, arg_list: list) -> Callable:
         def decorator(func):
+            signature = inspect.signature(func)
+            kwarg_only_parameters = [
+                key
+                for key, param in signature.parameters.items()
+                if param.kind == inspect.Parameter.KEYWORD_ONLY
+            ]
+            kwargs = dict(zip(kwarg_only_parameters, arg_list))
             # def wrapper(*args, **kwargs):
             #     return func(*args, **kwargs)
             previous_args = self.ops[-1].args if len(self.ops) > 0 else []
-            self.ops.append(PipelineStage(self.cache, previous_args + arg_list, func))
+            self.ops.append(PipelineStage(self.cache, previous_args, arg_list, func, kwargs))
             return func
         return decorator
 
-    def run(self):
+    # This is syntactic sugar for a direct invocation of the operation decorator when using predefined functions
+    def op(self, func: Callable, *args):
+        self.operation(list(args))(func)
+
+    def run(self) -> Any:
         cache_idx = min(len(self.ops) - 1, self.cache.current_depth)
         # cache_idx = self.cache.current_depth
         result = None
@@ -133,6 +152,9 @@ class Pipeline:
             if result is not None:
                 break
             cache_idx -= 1
+
+        if cache_idx == -1:  # no cache data available or cache is reset
+            result = self.first_stage_input
 
         # result = None
         args = tuple([]) if result is None else (result if isinstance(result, tuple) else tuple([result]))

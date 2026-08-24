@@ -6,7 +6,7 @@ from fairlead_core.plugin import InputDataError
 from fairlead_core.schema import load_schema_enhancement, add_enhancement_operation, add_enhancement_handler
 from simpler_api.apis.enhancement_api_base import BaseEnhancementApi
 from simpler_api.impl.plugins import get_cursor
-from simpler_api.impl.response import wrap_response_according_to_accept_header
+from simpler_api.impl.response import wrap_response_according_to_request
 from simpler_model import SchemaEnhancement, EnhancementOperation, GenericEnhancementOperation, \
     GenericEnhancementHandler
 
@@ -26,7 +26,7 @@ class EnhancementApi(BaseEnhancementApi):
 
         schema_enhancement = load_schema_enhancement(cursor.plugin.storage, schemaId)
 
-        return wrap_response_according_to_accept_header(request, schema_enhancement)
+        return wrap_response_according_to_request(request, schema_enhancement)
 
     def insert_enhancement_operation(
             self,

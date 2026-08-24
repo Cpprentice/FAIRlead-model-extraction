@@ -7,7 +7,7 @@ from fastapi import HTTPException, Request
 
 from simpler_api.apis.data_source_api_base import BaseDataSourceApi
 from simpler_api.impl.plugins import get_cursor
-from simpler_api.impl.response import wrap_response_according_to_accept_header
+from simpler_api.impl.response import wrap_response_according_to_request
 from simpler_api.impl.storage import get_storage
 from fairlead_core.plugin import DataSourcePlugin, InputFlag
 from simpler_model import DataSource, DataSourceTextDataInner
@@ -95,7 +95,7 @@ class DataSourceApi(BaseDataSourceApi):
                 for item in data_source.text_data
             } if data_source.text_data else {}
         )
-        return wrap_response_according_to_accept_header(request, self._get_data_source_by_name(data_source.id))
+        return wrap_response_according_to_request(request, self._get_data_source_by_name(data_source.id))
 
     def get_all_data_source_meta(
         self,
@@ -107,7 +107,7 @@ class DataSourceApi(BaseDataSourceApi):
         data_sources = []
         for name in data_source_names:
             data_sources.append(self._get_data_source_by_name(name))
-        return wrap_response_according_to_accept_header(request, data_sources)
+        return wrap_response_according_to_request(request, data_sources)
 
     def get_data_source_content(
         self,
@@ -133,7 +133,7 @@ class DataSourceApi(BaseDataSourceApi):
         request: Request,
         dataSourceId: str,
     ) -> List[DataSource]:
-        return wrap_response_according_to_accept_header(request, self._get_data_source_by_name(dataSourceId))
+        return wrap_response_according_to_request(request, self._get_data_source_by_name(dataSourceId))
 
     async def upload_data_source_content(
         self,

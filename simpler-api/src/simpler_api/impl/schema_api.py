@@ -18,7 +18,7 @@ from fairlead_core.plugin import InputDataError, DataSourceCursor
 from simpler_api.impl.mapping import make_class_definition_view, make_slot_definition_view
 from simpler_api.impl.plugins import get_cursor
 from simpler_api.apis.schema_api_base import BaseSchemaApi
-from simpler_api.impl.response import wrap_response_according_to_accept_header
+from simpler_api.impl.response import wrap_response_according_to_request, wrap_response_according_to_accept_header
 from simpler_api.impl.storage import get_storage
 from simpler_api.models.model_schema import ModelSchema
 from fairlead_core.dot import create_graph, filter_graph
@@ -57,7 +57,7 @@ class SchemaApi(BaseSchemaApi):
         storage = get_storage()
         for data_name in storage.list_available_data():
             if data_name == schemaId:
-                return wrap_response_according_to_accept_header(request, ModelSchema(
+                return wrap_response_according_to_request(request, ModelSchema(
                     id=data_name
                 ))
         raise HTTPException(status_code=404, detail="Schema not found")
@@ -177,7 +177,7 @@ class SchemaApi(BaseSchemaApi):
                     for class_def in schema.classes.values()
                 ]
 
-                return wrap_response_according_to_accept_header(request, view_classes)
+                return wrap_response_according_to_request(request, view_classes)
 
             return pipeline.run()
 
@@ -230,7 +230,7 @@ class SchemaApi(BaseSchemaApi):
                 for class_def in schema.classes.values()
             ]
 
-            return wrap_response_according_to_accept_header(request, view_classes)
+            return wrap_response_according_to_request(request, view_classes)
     def get_slots_by_schema_and_class(
         self,
         request: Request,
@@ -271,6 +271,6 @@ class SchemaApi(BaseSchemaApi):
                     for slot_def in slot_list
                 ]
 
-                return wrap_response_according_to_accept_header(request, slot_views)
+                return wrap_response_according_to_request(request, slot_views)
 
             return pipeline.run()

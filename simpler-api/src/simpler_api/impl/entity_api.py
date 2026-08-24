@@ -7,7 +7,7 @@ from starlette.responses import Response
 
 from simpler_api.impl.plugins import get_cursor
 from simpler_api.apis.entity_api_base import BaseEntityApi
-from simpler_api.impl.response import wrap_response_according_to_accept_header
+from simpler_api.impl.response import wrap_response_according_to_request
 from simpler_api.impl.schema_urls import introduce_api_urls_to_entity_list, introduce_api_urls_to_entity
 from simpler_api.impl.storage import get_storage
 from simpler_api.models.entity import Entity
@@ -46,7 +46,7 @@ class EntityApi(BaseEntityApi):
         # create_nx_graph_from_entity_list(entities)
         introduce_api_urls_to_entity_list(entities, request, schemaId)
 
-        return wrap_response_according_to_accept_header(request, entities)
+        return wrap_response_according_to_request(request, entities)
 
     def get_entity_by_id(
             self,

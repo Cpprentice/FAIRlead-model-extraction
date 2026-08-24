@@ -4,7 +4,7 @@ from fastapi import Request, HTTPException
 
 from simpler_api.apis.partition_api_base import BasePartitionApi
 from simpler_api.impl.plugins import get_cursor
-from simpler_api.impl.response import wrap_response_according_to_accept_header
+from simpler_api.impl.response import wrap_response_according_to_request
 from simpler_api.impl.schema_urls import introduce_api_urls_to_entity_list
 from fairlead_core.partitioning import create_partitioned_entity_list
 from fairlead_core.plugin import InputDataError
@@ -36,4 +36,4 @@ class PartitionApi(BasePartitionApi):
         for partition in partitions:
             introduce_api_urls_to_entity_list(partition.entities, request, schemaId)
 
-        return wrap_response_according_to_accept_header(request, partitions)
+        return wrap_response_according_to_request(request, partitions)
