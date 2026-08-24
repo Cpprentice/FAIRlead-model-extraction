@@ -29,6 +29,19 @@ class BaseSchemaApi:
         ...
 
 
+    def get_attributes_by_schema_and_class(
+        self,
+        request: Request,
+        schemaId: str,
+        classId: str,
+        prevent_structural_enhancement: bool,
+        prevent_enhancement: bool,
+        class_filter: List[str],
+    ) -> List[SlotDefinitionView]:
+        """desc"""
+        ...
+
+
     def get_classes_by_schema(
         self,
         request: Request,
@@ -37,6 +50,19 @@ class BaseSchemaApi:
         prevent_enhancement: bool,
         class_filter: List[str],
     ) -> List[ClassDefinitionView]:
+        """desc"""
+        ...
+
+
+    def get_relations_by_schema_and_class(
+        self,
+        request: Request,
+        schemaId: str,
+        classId: str,
+        prevent_structural_enhancement: bool,
+        prevent_enhancement: bool,
+        class_filter: List[str],
+    ) -> List[SlotDefinitionView]:
         """desc"""
         ...
 

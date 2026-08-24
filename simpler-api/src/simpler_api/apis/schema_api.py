@@ -58,6 +58,27 @@ async def get_all_schemas(
 
 
 @router.get(
+    "/schemata/{schemaId}/classes/{classId}/attributes",
+    responses={
+        200: {"model": List[SlotDefinitionView], "description": "successful operation"},
+    },
+    tags=["schema"],
+    summary="get all attributes of a class",
+    response_model_by_alias=True,
+)
+async def get_attributes_by_schema_and_class(
+    request: Request,
+    schemaId: str = Path(..., description="ID of schema to access"),
+    classId: str = Path(..., description="ID of a class to access"),
+    prevent_structural_enhancement: bool = Query(False, description="", alias="preventStructuralEnhancement"),
+    prevent_enhancement: bool = Query(False, description="", alias="preventEnhancement"),
+    class_filter: List[str] = Query([], description="Only include classes of the schema that are in range of the specified classes", alias="classFilter"),
+) -> List[SlotDefinitionView]:
+    """desc"""
+    return BaseSchemaApi.subclasses[0]().get_attributes_by_schema_and_class(request, schemaId, classId, prevent_structural_enhancement, prevent_enhancement, class_filter)
+
+
+@router.get(
     "/schemata/{schemaId}/classes",
     responses={
         200: {"model": List[ClassDefinitionView], "description": "successful operation"},
@@ -75,6 +96,27 @@ async def get_classes_by_schema(
 ) -> List[ClassDefinitionView]:
     """desc"""
     return BaseSchemaApi.subclasses[0]().get_classes_by_schema(request, schemaId, prevent_structural_enhancement, prevent_enhancement, class_filter)
+
+
+@router.get(
+    "/schemata/{schemaId}/classes/{classId}/relations",
+    responses={
+        200: {"model": List[SlotDefinitionView], "description": "successful operation"},
+    },
+    tags=["schema"],
+    summary="get all relations of a class",
+    response_model_by_alias=True,
+)
+async def get_relations_by_schema_and_class(
+    request: Request,
+    schemaId: str = Path(..., description="ID of schema to access"),
+    classId: str = Path(..., description="ID of a class to access"),
+    prevent_structural_enhancement: bool = Query(False, description="", alias="preventStructuralEnhancement"),
+    prevent_enhancement: bool = Query(False, description="", alias="preventEnhancement"),
+    class_filter: List[str] = Query([], description="Only include classes of the schema that are in range of the specified classes", alias="classFilter"),
+) -> List[SlotDefinitionView]:
+    """desc"""
+    return BaseSchemaApi.subclasses[0]().get_relations_by_schema_and_class(request, schemaId, classId, prevent_structural_enhancement, prevent_enhancement, class_filter)
 
 
 @router.get(

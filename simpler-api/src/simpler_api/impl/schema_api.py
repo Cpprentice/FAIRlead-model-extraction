@@ -1,5 +1,5 @@
 import json
-from typing import List
+from typing import List, Any
 import urllib.parse
 
 import yaml
@@ -16,7 +16,7 @@ from fairlead_core.metadata import convert_schema_to_oemetadata
 from fairlead_core.partitioning import create_filtered_class_list
 from fairlead_core.plugin import InputDataError, DataSourceCursor
 from simpler_api.impl.mapping import make_class_definition_view, make_slot_definition_view
-from simpler_api.impl.plugins import get_cursor
+from simpler_api.impl.plugins import get_cursor, inject_cursor, use_caching_pipeline
 from simpler_api.apis.schema_api_base import BaseSchemaApi
 from simpler_api.impl.response import wrap_response_according_to_request, wrap_response_according_to_accept_header
 from simpler_api.impl.storage import get_storage
@@ -25,6 +25,42 @@ from fairlead_core.dot import create_graph, filter_graph
 from fairlead_core.schema import apply_schema_correction_if_available, introduce_inverse_relations, \
     apply_schema_enhancement, load_schema_enhancement
 from simpler_model import ClassDefinitionView, SlotDefinitionView
+
+
+# Helper functions for pipelining
+def get_schema_from_cursor(cursor: DataSourceCursor) -> SchemaDefinition:
+    try:
+        return cursor.get_schema()
+    except InputDataError as ex:
+        raise HTTPException(
+            status_code=400,
+            detail="Schema extraction failed due to invalid input data"
+        ) from ex
+
+
+def filter_linkml_schema(schema: SchemaDefinition, *, class_filter: list[str]) -> SchemaDefinition:
+    if class_filter:
+        return create_filtered_class_list(schema, class_filter, 1)
+    return schema
+
+
+def make_schema_view(schema: SchemaDefinition) -> SchemaView:
+    return SchemaView(schema)
+
+
+def pick_class_and_retain_schema_view(view: SchemaView, *, class_id: str) -> tuple[ClassDefinition, SchemaView]:
+    class_ = view.get_class(class_id)
+    if class_ is None:
+        raise HTTPException(status_code=404, detail="Class not found")
+    return class_, view
+
+
+def convert_class_to_view(class_: ClassDefinition, view: SchemaView) -> ClassDefinitionView:
+    return make_class_definition_view(class_, view)
+
+
+def serialize_response(data: Any, *, accept_header: str) -> Response:
+    return wrap_response_according_to_accept_header(accept_header, data)
 
 
 class SchemaApi(BaseSchemaApi):
@@ -274,3 +310,54 @@ class SchemaApi(BaseSchemaApi):
                 return wrap_response_according_to_request(request, slot_views)
 
             return pipeline.run()
+
+    @inject_cursor
+    @use_caching_pipeline
+    def get_attributes_by_schema_and_class(
+        self,
+        request: Request,
+        schemaId: str,
+        classId: str,
+        prevent_structural_enhancement: bool,
+        prevent_enhancement: bool,
+        class_filter: list[str],
+        cursor: DataSourceCursor,
+        pipeline: Pipeline,
+    ) -> list[SlotDefinitionView]:
+        pipeline.op(get_schema_from_cursor, prevent_structural_enhancement, prevent_enhancement)
+        pipeline.op(filter_linkml_schema, class_filter)
+        pipeline.op(make_schema_view)
+        pipeline.op(pick_class_and_retain_schema_view, classId)
+        pipeline.op(convert_class_to_view)
+
+        @pipeline.operation(['attributes'])
+        def pick_attributes(class_definition_view: ClassDefinitionView) -> list[SlotDefinitionView]:
+            return list(class_definition_view.attributes.values())
+
+        pipeline.op(serialize_response, request.headers.get('accept', None))
+
+    @inject_cursor
+    @use_caching_pipeline
+    def get_relations_by_schema_and_class(
+        self,
+        request: Request,
+        schemaId: str,
+        classId: str,
+        prevent_structural_enhancement: bool,
+        prevent_enhancement: bool,
+        class_filter: list[str],
+        cursor: DataSourceCursor,
+        pipeline: Pipeline,
+    ) -> list[SlotDefinitionView]:
+
+        pipeline.op(get_schema_from_cursor, prevent_structural_enhancement, prevent_enhancement)
+        pipeline.op(filter_linkml_schema, class_filter)
+        pipeline.op(make_schema_view)
+        pipeline.op(pick_class_and_retain_schema_view, classId)
+        pipeline.op(convert_class_to_view)
+
+        @pipeline.operation(['relations'])
+        def pick_relations(class_definition_view: ClassDefinitionView) -> list[SlotDefinitionView]:
+            return list(class_definition_view.relations.values())
+
+        pipeline.op(serialize_response, request.headers.get('accept', None))

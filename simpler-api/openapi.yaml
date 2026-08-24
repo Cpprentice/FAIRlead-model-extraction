@@ -768,6 +768,74 @@ paths:
       summary: get all classes of a schema
       tags:
       - schema
+  /schemata/{schemaId}/classes/{classId}/attributes:
+    get:
+      description: desc
+      operationId: getAttributesBySchemaAndClass
+      parameters:
+      - $ref: '#/components/parameters/schemaId'
+      - $ref: '#/components/parameters/classId'
+      - $ref: '#/components/parameters/preventStructuralEnhancement'
+      - $ref: '#/components/parameters/preventEnhancement'
+      - $ref: '#/components/parameters/classFilter'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/SlotDefinitionView'
+                type: array
+            application/xml:
+              schema:
+                items:
+                  $ref: '#/components/schemas/SlotDefinitionView'
+                type: array
+                xml:
+                  name: attributes
+            application/x-yaml:
+              schema:
+                items:
+                  $ref: '#/components/schemas/SlotDefinitionView'
+                type: array
+          description: successful operation
+      summary: get all attributes of a class
+      tags:
+      - schema
+  /schemata/{schemaId}/classes/{classId}/relations:
+    get:
+      description: desc
+      operationId: getRelationsBySchemaAndClass
+      parameters:
+      - $ref: '#/components/parameters/schemaId'
+      - $ref: '#/components/parameters/classId'
+      - $ref: '#/components/parameters/preventStructuralEnhancement'
+      - $ref: '#/components/parameters/preventEnhancement'
+      - $ref: '#/components/parameters/classFilter'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/SlotDefinitionView'
+                type: array
+            application/xml:
+              schema:
+                items:
+                  $ref: '#/components/schemas/SlotDefinitionView'
+                type: array
+                xml:
+                  name: relations
+            application/x-yaml:
+              schema:
+                items:
+                  $ref: '#/components/schemas/SlotDefinitionView'
+                type: array
+          description: successful operation
+      summary: get all relations of a class
+      tags:
+      - schema
   /schemata/{schemaId}/classes/{classId}/slots:
     get:
       description: desc
