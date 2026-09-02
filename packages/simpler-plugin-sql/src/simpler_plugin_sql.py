@@ -9,9 +9,11 @@ from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from dataclasses import dataclass
 from types import SimpleNamespace
-from typing import List, Dict, Set
+from typing import List, Dict, Set, Callable, Any, MutableSequence
 
-from linkml_runtime.linkml_model import SchemaDefinition, SlotDefinition, ClassDefinition
+from linkml_runtime import SchemaView
+from linkml_runtime.linkml_model import SchemaDefinition, SlotDefinition, ClassDefinition, TypeDefinition
+from linkml_runtime.linkml_model.meta import UniqueKey
 from linkml_runtime.utils.schema_builder import SchemaBuilder
 from sqlalchemy import create_engine, Connection, text, MetaData, ForeignKey as SqlForeignKey, Column as SqlColumn, \
     Table, select
@@ -162,6 +164,15 @@ def to_camel_case(s: str) -> str:
     return ''.join(word.capitalize() for word in words if word)
 
 
+def remove_by_predicate(collection: MutableSequence[Any], predicate: Callable[[Any], bool]):
+    items_to_delete = []
+    for item in collection:
+        if predicate(item):
+            items_to_delete.append(item)
+    for item in items_to_delete:
+        collection.remove(item)
+
+
 class SqlDataSourceType(DataSourceType):
     name = 'SQL'
     inputs = [('connector', InputFlag.TEXT | InputFlag.SECURE)]
@@ -310,23 +321,39 @@ class BaseSqlDataSourcePlugin(DataSourcePlugin):
         return attribute_lookup
 
     @staticmethod
-    def _get_linkml_attribute_lookup(metadata: MetaData) -> dict[str, list[SlotDefinition]]:
-        attribute_lookup = collections.defaultdict(list)
+    def _get_linkml_unique_keys_lookup(metadata: MetaData) -> dict[str, list[UniqueKey]]:
+        lookup = collections.defaultdict(list)
 
         for table in metadata.tables.values():
-
-
             table_index_lookup = collections.defaultdict(lambda: False)
             for index in table.indexes:
                 for column in index.columns:
                     table_index_lookup[column.name] = True
 
+                if index.unique:
+                    lookup[table.name].append(UniqueKey(
+                        unique_key_name=index.name,
+                        unique_key_slots=index.columns
+                    ))
 
+
+            # this often returned uniqueness for columns that are just indexed.
+            # for column in table.columns:
+            #     is_unique = (not column.nullable and column.unique) or \
+            #         column.index is not None or table_index_lookup[column.name] or None
+            #     if is_unique:
+            #         _ = 42
+        return lookup
+
+    @staticmethod
+    def _get_linkml_attribute_lookup(metadata: MetaData) -> dict[str, list[SlotDefinition]]:
+        attribute_lookup = collections.defaultdict(list)
+
+        for table in metadata.tables.values():
             for rank, column in enumerate(table.columns):
                 attribute_lookup[column.table.name].append(SlotDefinition(
                     name=column.name,
-                    identifier=column.primary_key or (not column.nullable and column.unique) or
-                        column.index is not None or table_index_lookup[column.name] or None,
+                    identifier=column.primary_key,  # TODO we might need some solution to pick an identifier from unique keys if there is no primary key
                     required=not column.nullable,
                     range=column.type,
                     rank=rank
@@ -334,6 +361,64 @@ class BaseSqlDataSourcePlugin(DataSourcePlugin):
                     #  however for the sqlite db of sincal it seems the unique flag is None even for unique columns
                 ))
         return attribute_lookup
+
+    @staticmethod
+    def _create_linkml_types(attribute_lookup: dict[str, list[SlotDefinition]], builder: SchemaBuilder):
+        view = SchemaView(builder.schema)
+
+        SQL_TYPE_LOOKUP = {
+            # POSTGRES
+            "UUID": "string",
+            "TEXT": "string",
+            "JSONB": "string",
+            "INTERVAL": "string",
+            "DOUBLE PRECISION": "double",
+            "TIMESTAMP": "datetime",
+            "BOOLEAN": "boolean",
+            "INTEGER": "integer",
+            "INT": "integer",
+            "BIGINT": "integer",
+            "SMALLINT": "integer",
+            "FLOAT": "float",
+            "REAL": "float",
+            "DATE": "date",
+            "TIME": "time",
+            "VARCHAR": "string",
+        }
+
+        sanitize_expr = re.compile(r"\(\d+\)$")
+        def type_sanitizer(s: str) -> str:
+            return re.sub(sanitize_expr, "", s)
+
+        added_types: set[str] = set()
+
+        for slot_list in attribute_lookup.values():
+            for slot_def in slot_list:
+                type_name = type_sanitizer(slot_def.range)
+
+                if type_name != slot_def.range:
+                    # this was sanitized so also update the attribute lookup
+                    slot_def.range = type_name
+
+                type_def = view.get_type(type_name)
+                if type_def is None and type_name not in added_types:
+
+                    parent_type_name = SQL_TYPE_LOOKUP[type_name]
+                    parent_type = view.get_type(parent_type_name)
+
+                    if parent_type is None:
+                        raise RuntimeError(f"No type found for {parent_type_name}")
+
+                    # parent_type_dict = asdict(parent_type)
+
+                    added_types.add(type_name)
+                    builder.add_type(TypeDefinition(
+                        # **parent_type_dict,
+                        name=type_name,
+                        typeof=parent_type_name,
+                        base=parent_type.base,
+                    ))
+
 
     @staticmethod
     def _get_foreign_keys_that_apply_to_determining_entity_weakness(foreign_keys: List[ForeignKey]) -> List[ForeignKey]:
@@ -372,6 +457,8 @@ class BaseSqlDataSourcePlugin(DataSourcePlugin):
             filtered_foreign_key_objects = \
                 self._get_foreign_keys_that_apply_to_determining_entity_weakness(foreign_key_objects)
             attribute_lookup = self._get_linkml_attribute_lookup(metadata)
+            self._create_linkml_types(attribute_lookup, builder)
+            unique_key_lookup = self._get_linkml_unique_keys_lookup(metadata)
 
             grouped_foreign_keys = collections.defaultdict(list)
             for f_key in filtered_foreign_key_objects:
@@ -417,6 +504,8 @@ class BaseSqlDataSourcePlugin(DataSourcePlugin):
                     if slot_name != foreign_key.constraint_name:
                         alias = foreign_key.constraint_name
 
+                    alias = to_snake_case(foreign_key.fk_column)
+
                     # if foreign_key.primary_table == table_name:
                     if foreign_key.foreign_table == table_name:
                         # fk_short_name = foreign_key.foreign_table.replace('public.', '')
@@ -439,6 +528,7 @@ class BaseSqlDataSourcePlugin(DataSourcePlugin):
                                 # TODO think about something for an identifying relation
                                 # identifier=foreign_key in filtered_foreign_key_objects or None
                             ))
+                            remove_by_predicate(attribute_lookup[table_name], lambda x: x.name == alias)
                             relation_slot_names.append(slot_name)
                             # relations.append(
                             #     Relation(
@@ -459,6 +549,7 @@ class BaseSqlDataSourcePlugin(DataSourcePlugin):
                     name=short_name,
                     attributes=attribute_lookup[table_name],
                     slots=relation_slot_names,  # this should auto encode weakness if any of the slots is an identifier
+                    unique_keys=unique_key_lookup[table_name]
                 ))
                 # entities.append(Entity(
                 #     entity_name=[short_name],
