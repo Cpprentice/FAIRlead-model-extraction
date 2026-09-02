@@ -1,3 +1,4 @@
+import collections
 import functools
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
@@ -19,7 +20,7 @@ class DataSourceStorage(ABC):
         ...
 
     @abstractmethod
-    def get_data_factory(self, name: str) -> dict[str, dict[str, Callable[[], IO]]]:
+    def get_data_factory(self, name: str) -> dict[str, Callable[[], IO]]:
         ...
 
     @abstractmethod
@@ -75,11 +76,8 @@ class ManualFilesystemDataSourceStorage(DataSourceStorage):
             for stream in data.values():
                 stream.close()
 
-    def get_data_factory(self, name: str) -> dict[str, dict[str, Callable[[], IO]]]:
+    def get_data_factory(self, name: str) -> dict[str, Callable[[], IO]]:
         data = {}
-        data_wrapper = {
-            'data': data
-        }
         if self.cache_path is not None and self.cache_path.is_dir():
             for file_path in self.cache_path.iterdir():
                 if file_path.is_file():
@@ -88,7 +86,7 @@ class ManualFilesystemDataSourceStorage(DataSourceStorage):
         # manually set files should override same files in cache dir
         for input_name, file_path in self.files[name][1].items():
             data[input_name] = functools.partial(file_path.open, 'rb')
-        return data_wrapper
+        return data
 
 
     def insert_data(self, name: str, plugin_name: str, parts: Dict[str, IO]):
@@ -122,17 +120,14 @@ class ManualFilesystemDataSourceStorage(DataSourceStorage):
 
 class FilesystemDataSourceStorage(DataSourceStorage):
 
-    def get_data_factory(self, name: str) -> dict[str, dict[str, Callable[[], IO]]]:
+    def get_data_factory(self, name: str) -> dict[str, Callable[[], IO]]:
         read_directory_path = self.storage_path / name
         if not read_directory_path.is_dir():
             return {}
-        inner = {}
-        data = {
-            '': inner
-        }
+        data = {}
         for file_path in read_directory_path.iterdir():
             if file_path.is_file():
-                inner[file_path.name] = functools.partial(file_path.open, 'rb')
+                data[file_path.name] = functools.partial(file_path.open, 'rb')
         return data
 
     def __init__(self, storage_path: Path):
@@ -190,3 +185,26 @@ class FilesystemDataSourceStorage(DataSourceStorage):
         plugin_file_path = self.storage_path / data_source_name / 'plugin.yaml'
         with open(plugin_file_path, 'r') as stream:
             return yaml.safe_load(stream)
+
+
+class FileMapSettings:
+    def __init__(self, storage: DataSourceStorage, data_source_name: str):
+        self.storage = storage
+        self.data_source_name = data_source_name
+
+    # @functools.lru_cache(maxsize=None)
+    def get_file_map_factory(self) -> dict[str, dict[str, Callable[[], IO]]]:
+        storage_factory = self.storage.get_data_factory(self.data_source_name)
+        file_map = self.storage.get_data_source_settings(self.data_source_name).get('file_map', {})
+        if not file_map:
+            raise RuntimeError('FileMap not specified or empty in plugin.yaml')
+        factory_lookup = collections.defaultdict(dict)
+        try:
+            for file_name, input_name in file_map.items():
+                factory_lookup[input_name][file_name] = storage_factory[file_name]
+            return factory_lookup
+        except KeyError as e:
+            raise RuntimeError('FileMap references a file that is not available') from e
+
+    def get_input_stream_factories(self, input_name: str) -> dict[str, Callable[[], IO]]:
+        return self.get_file_map_factory()[input_name]

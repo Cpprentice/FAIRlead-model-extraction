@@ -9,13 +9,17 @@ from tempfile import TemporaryFile, NamedTemporaryFile, TemporaryDirectory
 from typing import List, Dict
 from zipfile import ZipFile
 
-from owlready2 import onto_path, World, PREDEFINED_ONTOLOGIES
+from linkml_runtime.linkml_model import SchemaDefinition, ClassDefinition, SlotDefinition
+from linkml_runtime.utils.schema_builder import SchemaBuilder
+from owlready2 import onto_path, World, PREDEFINED_ONTOLOGIES, sync_reasoner_pellet, Ontology
 from rdflib import Graph, RDF, OWL, RDFS
 
 from fairlead_core.cardinality import create_cardinality
 from fairlead_core.plugin import DataSourcePlugin, DataSourceType, InputFlag
 from fairlead_core.rdf import (extract_ontology_concepts, make_n_triples_stream, get_cardinality_restrictions,
-                               build_cardinality, merge_cardinalities, stringify_cardinality)
+                               build_cardinality, merge_cardinalities, stringify_cardinality,
+                               build_iterative_class_list)
+from fairlead_core.storage import FileMapSettings
 
 try:
     from simpler_model import Entity, Relation, Attribute, AttributeModifier, RelationModifier, EntityModifier
@@ -187,7 +191,7 @@ class OwlDataSourceType(DataSourceType):
         ('ontology', InputFlag.TEXT),
         ('ontology_extension', InputFlag.TEXT),
         ('data', InputFlag.TEXT),
-        ('imports', InputFlag.BINARY)
+        ('import', InputFlag.TEXT)
     ]
 
 
@@ -195,91 +199,100 @@ class OwlDataSourcePlugin(DataSourcePlugin):
 
     data_source_type = OwlDataSourceType()
 
+    def _load_all_non_data_inputs(self, name: str) -> tuple[World, list[Ontology]]:
+        world = World()
+        file_map = FileMapSettings(self.storage, name)
+
+        main_ontologies = []
+
+        for file_name, factory in file_map.get_input_stream_factories("import").items():
+            with factory() as onto_stream, make_n_triples_stream(onto_stream) as triples_stream:
+                ontology = world.get_ontology('temp').load(fileobj=triples_stream, only_local=True)
+            PREDEFINED_ONTOLOGIES[ontology.base_iri] = ontology
+
+        for file_name, factory in file_map.get_input_stream_factories("ontology").items():
+            with factory() as onto_stream, make_n_triples_stream(onto_stream) as triples_stream:
+                ontology_base_url = Path(triples_stream.name).as_uri().replace('///', '//')
+                ontology = world.get_ontology(ontology_base_url).load(fileobj=triples_stream, only_local=True)
+                main_ontologies.append(ontology)
+
+        for file_name, factory in file_map.get_input_stream_factories("ontology_extension").items():
+            with factory() as onto_stream, make_n_triples_stream(onto_stream) as triples_stream:
+                ontology_base_url = Path(triples_stream.name).as_uri().replace('///', '//')
+                ontology = world.get_ontology(ontology_base_url).load(fileobj=triples_stream, only_local=True)
+                main_ontologies.append(ontology)
+
+        # sync_reasoner_pellet(world)  # TODO pellet complained about an old java version - maybe I need to set my env to a newer java
+        return world, main_ontologies
+
+    @staticmethod
+    def _extract_ontology_concepts(world: World):
+        classes = sorted(build_iterative_class_list(world), key=lambda x: x.name)
+        data_properties = sorted(world.data_properties(), key=lambda x: x.name)
+        object_properties = sorted(world.object_properties(), key=lambda x: x.name)
+
+        return classes, object_properties, data_properties
+
     def _get_entity_dict(self, name: str, only_include_if_data_exists=False) -> Dict[str, List[Entity]]:
         # It seems the ntriples format must have just linux line endings otherwise it just does garbage
 
-        # with open(Path(r'C:\Development\datasets\mondial-database\rdf-mondial\mondial-meta-test.nt'), 'rb') as stream:
-        #     ontology = get_ontology('http://www.semwebtech.org/mondial/10/meta#').load(fileobj=stream)
-        #     graph = ontology.world.as_rdflib_graph()
-        #     type_triples = list(graph.triples((None, RDF.type, None)))
-        #     classes = list(ontology.classes())
-        #     obj_props = list(ontology.object_properties())
-        # with (self.storage.get_data(name) as stream_lookup):
-        #     ontology = get_ontology(
-        #         'http://www.semwebtech.org/mondial/10/'
-        #     ).load(reload=True)
-        #     # ).load(fileobj=stream_lookup['ontology-nt'], reload=True)
+        world, ontologies = self._load_all_non_data_inputs(name)
+        # with self.storage.get_data(name) as stream_lookup, TemporaryDirectory() as import_directory:
+        #     if 'imports' in stream_lookup:
+        #         with ZipFile(stream_lookup['imports']) as import_zip:
+        #             import_zip.extractall(import_directory)
+        #         # onto_path.append(import_directory)
+        #
+        #         for import_ontology_path in Path(import_directory).glob('*.ttl'):
+        #             with open(import_ontology_path, 'rb') as onto_stream:
+        #                 with make_n_triples_stream(onto_stream) as triples_stream:
+        #                     ontology = world.get_ontology('temp').load(fileobj=triples_stream, only_local=True)
+        #             PREDEFINED_ONTOLOGIES[ontology.base_iri] = ontology
+        #
+        #     streams_to_load = {'ontology', 'ontology_extension'} & set(stream_lookup.keys())
+        #     with ExitStack() as stack:
+        #         streams = [
+        #             stack.enter_context(make_n_triples_stream(stream_lookup[stream_name]))
+        #             for stream_name in streams_to_load
+        #         ]
+        #         streams_with_url = [
+        #             (stream, Path(stream.name).as_uri().replace('///', '//'))
+        #             for stream in streams
+        #         ]
+        #         classes, object_properties, data_properties, world, ontologies = \
+        #             extract_ontology_concepts(streams_with_url, world)
+        #
+        #     # if 'ontology' in stream_lookup:
+        #     #     with make_n_triples_stream(stream_lookup['ontology']) as n_triples_stream:
+        #     #         stream_path_url = Path(n_triples_stream.name).as_uri().replace('///', '//')
+        #     #         streams.append((n_triples_stream, stream_path_url))
+        #     #         classes, object_properties, data_properties, world, ontologies = \
+        #     #             extract_ontology_concepts([])
 
-        # with self.storage.get_data(name) as stream_lookup:
-        #     if 'ontology' in stream_lookup:
-        #         temp_graph = Graph()
-        #         temp_graph.parse(stream_lookup['ontology'])
-        #         base_url = temp_graph.namespace_manager.expand_curie(':')
-        #         # (Path.cwd() / 'temp.nt').write_text(temp_graph.serialize(format='nt11'))
-        #         with NamedTemporaryFile(delete_on_close=False) as ontology_file:
-        #             # shutil.copyfileobj(stream_lookup['ontology'], ontology_file)
-        #             ontology_file.write(temp_graph.serialize(format='nt11').encode('utf-8'))
-        #             ontology_file.seek(0)
-        #             # ontology_file.close()
-        #             ontology = get_ontology(base_url).load(fileobj=ontology_file)
+        classes, object_properties, data_properties = self._extract_ontology_concepts(world)
 
-        # return
-        world = World()
-        with self.storage.get_data(name) as stream_lookup, TemporaryDirectory() as import_directory:
-            if 'imports' in stream_lookup:
-                with ZipFile(stream_lookup['imports']) as import_zip:
-                    import_zip.extractall(import_directory)
-                # onto_path.append(import_directory)
+        object_property_query = object_property_query_template.format(
+            ' '.join(f'<{class_.iri}>' for class_ in classes),
+            ' '.join(f'<{prop.iri}>' for prop in object_properties)
+        )
 
-                for import_ontology_path in Path(import_directory).glob('*.ttl'):
-                    with open(import_ontology_path, 'rb') as onto_stream:
-                        with make_n_triples_stream(onto_stream) as triples_stream:
-                            ontology = world.get_ontology('temp').load(fileobj=triples_stream, only_local=True)
-                    PREDEFINED_ONTOLOGIES[ontology.base_iri] = ontology
+        direct_instance_query = direct_instance_query_template.format(
+            ' '.join(f'<{class_.iri}>' for class_ in classes)
+        )
 
-            streams_to_load = {'ontology', 'ontology_extension'} & set(stream_lookup.keys())
-            with ExitStack() as stack:
-                streams = [
-                    stack.enter_context(make_n_triples_stream(stream_lookup[stream_name]))
-                    for stream_name in streams_to_load
-                ]
-                streams_with_url = [
-                    (stream, Path(stream.name).as_uri().replace('///', '//'))
-                    for stream in streams
-                ]
-                classes, object_properties, data_properties, world, ontologies = \
-                    extract_ontology_concepts(streams_with_url, world)
+        object_property_query_data = set()
+        direct_instance_query_data = set()
+        if only_include_if_data_exists:
 
-            # if 'ontology' in stream_lookup:
-            #     with make_n_triples_stream(stream_lookup['ontology']) as n_triples_stream:
-            #         stream_path_url = Path(n_triples_stream.name).as_uri().replace('///', '//')
-            #         streams.append((n_triples_stream, stream_path_url))
-            #         classes, object_properties, data_properties, world, ontologies = \
-            #             extract_ontology_concepts([])
+            file_map = FileMapSettings(self.storage, name)
+            for file_name, factory in file_map.get_input_stream_factories("data").items():
+                with factory() as onto_stream, make_n_triples_stream(onto_stream) as triples_stream:
+                    data_base_url = Path(triples_stream.name).as_uri().replace('///', '//')
+                    data_ontology = world.get_ontology(data_base_url).load(fileobj=triples_stream, only_local=True)
 
-            object_property_query = object_property_query_template.format(
-                ' '.join(f'<{class_.iri}>' for class_ in classes),
-                ' '.join(f'<{prop.iri}>' for prop in object_properties)
-            )
-
-            direct_instance_query = direct_instance_query_template.format(
-                ' '.join(f'<{class_.iri}>' for class_ in classes)
-            )
-
-            object_property_query_data = set()
-            direct_instance_query_data = set()
-            if only_include_if_data_exists:
-                data_graph = Graph()
-                data_graph.parse(stream_lookup['data'])
-                with NamedTemporaryFile('w', newline='', delete_on_close=False, encoding='utf-8') as stream:
-                    stream_path_url = Path(stream.name).as_uri().replace('///', '//')
-                    stream.write(data_graph.serialize(format='ntriples'))
-                    stream.close()
-                    data_ontology = world.get_ontology(stream_path_url).load()
-
-                ontologies[0].imported_ontologies.append(data_ontology)
-                object_property_query_data = set(tuple(x) for x in world.sparql(object_property_query))
-                direct_instance_query_data = set(x[0] for x in world.sparql(direct_instance_query))
+            ontologies[0].imported_ontologies.append(data_ontology)
+            object_property_query_data = set(tuple(x) for x in world.sparql(object_property_query))
+            direct_instance_query_data = set(x[0] for x in world.sparql(direct_instance_query))
 
         def type_factory(input_value) -> str:
 
@@ -409,6 +422,40 @@ class OwlDataSourcePlugin(DataSourcePlugin):
 
     def get_entity_by_id(self, name: str, entity_id: str) -> Entity:
         pass
+
+    def get_raw_data_by_entity(self, name: str, entity_id: str) -> tuple[bytes, str]:
+        pass
+
+    def get_schema(self, name: str) -> SchemaDefinition:
+        world, ontologies = self._load_all_non_data_inputs(name)
+        classes, object_properties, datatype_properties = self._extract_ontology_concepts(world)
+
+        schema_builder = SchemaBuilder(name)
+        schema_builder.add_defaults()
+
+        # TODO do we need to build multiple schemas here e.g. for DCAT3 and PROV in parallel
+        for cls in classes:
+            schema_builder.add_class(ClassDefinition(
+                name=cls.name,
+                class_uri=cls.iri
+            ))
+
+        for prop in object_properties:
+            schema_builder.add_slot(SlotDefinition(
+                name=prop.name,
+                # range=prop.range,
+                # domain=prop.domain,
+                slot_uri=prop.iri
+            ))
+
+        for prop in datatype_properties:
+            schema_builder.add_slot(SlotDefinition(
+                name=prop.name,
+                # range=prop.range,
+                # domain=prop.domain,
+                slot_uri=prop.iri
+            ))
+        return schema_builder.schema
 
 
 class SparqlDataSourcePlugin(DataSourcePlugin):

@@ -21,7 +21,7 @@ import pyarrow.parquet
 
 from fairlead_core.plugin import DataSourcePlugin, DataSourceType, InputFlag
 from fairlead_core.performance import profile
-from fairlead_core.storage import ManualFilesystemDataSourceStorage
+from fairlead_core.storage import ManualFilesystemDataSourceStorage, FileMapSettings
 from simpler_model import Entity, Attribute
 from simpler_plugin_json import JSONDataSourcePlugin
 
@@ -585,9 +585,12 @@ class ParquetDataSourcePlugin(DataSourcePlugin):
             #     context_manager = self._zip_parquet_streams(parquet_stream)
             # else:
             #     context_manager = contextlib.nullcontext({'data': parquet_stream})
-        stream_factory_lookup = storage.get_data_factory(schema_id)
+        file_map = FileMapSettings(storage, schema_id)
+        stream_factory_lookup = file_map.get_file_map_factory()
+        # stream_factory_lookup = storage.get_data_factory(schema_id)
+        # TODO check if this still works after I changed the get_data_factory
         schema_builder = SchemaBuilder(name)
-        for file_name, stream_factory in stream_factory_lookup['data'].items():
+        for file_name, stream_factory in stream_factory_lookup[schema_id].items():
 
             file_path = Path(file_name)
             file_name_no_extension = file_path.stem
