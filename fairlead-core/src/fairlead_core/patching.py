@@ -167,6 +167,60 @@ class RenameAttributeOperation(RenameLinkMLElementOperation):
 #             pass
 
 
+class AssignSlotUriOperation(AddOperation):
+    class_name: str | None
+    slot_name: str
+    slot_uri: str
+
+    def __init__(self, /, **data: Any):
+        class_name = data['class_name'] if 'class_name' in data else None
+        slot_name = data['slot_name']
+        slot_uri = data['slot_uri']
+        if class_name is None:
+            data['locator'] = make_jsonpath(f'$.slots["{slot_name}"].slot_uri')
+        else:
+            if class_name == '*':
+                data['locator'] = make_jsonpath(f'$.classes.*.attributes["{slot_name}"].slot_uri')
+            else:
+                data['locator'] = make_jsonpath(f'$.classes["{class_name}"].attributes["{slot_name}"].slot_uri')
+        data['value'] = slot_uri
+        data['class_name'] = class_name
+        super().__init__(**data)
+
+
+class AssignClassUriOperation(AddOperation):
+    class_name: str
+    class_uri: str
+
+    def __init__(self, /, **data: Any):
+        class_name = data['class_name']
+        class_uri = data['class_uri']
+
+        data['locator'] = make_jsonpath(f'$.classes["{class_name}"].class_uri')
+        data['value'] = class_uri
+        super().__init__(**data)
+
+
+class AddPrefixesOperation(CompoundOperation):
+    prefixes: dict[str, str]
+
+    def __init__(self, /, **data: Any):
+        prefixes = data['prefixes']
+
+        data['locator'] = make_jsonpath(f'$')
+        data['inner_operations'] = [
+            AddOperation(
+                locator=make_jsonpath(f'$.prefixes["{prefix_name}"]'),
+                value=dict(
+                    prefix_prefix=prefix_name,
+                    prefix_reference=prefix_uri
+                )
+            )
+            for prefix_name, prefix_uri in prefixes.items()
+        ]
+        super().__init__(**data)
+
+
 class AssignUnitOperation(AddOperation):
     class_name: str
     attribute_name: str
